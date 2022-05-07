@@ -103,12 +103,10 @@ class KigyoINIT:
             return None
         else:
             try:
-                sw = spamwatch.Client(spamwatch_api)
-                return sw
-            except:
-                sw = None
+                return spamwatch.Client(spamwatch_api)
+            except Exception:
                 log.warning("Can't connect to SpamWatch!")
-                return sw
+                return None
 
 
 KInit = KigyoINIT(parser=kigconfig)
@@ -161,11 +159,12 @@ app = (
     .token(TOKEN)
     .base_url(KInit.BOT_API_URL)
     .base_file_url(KInit.BOT_API_FILE_URL)
+    .concurrent_updates(True)
     .build()
 )
 
-asyncio.get_event_loop().run_until_complete(app.bot.initialize())
-updater = app.updater
+# asyncio.get_event_loop().run_until_complete(app.bot.initialize())
+# updater = asyncio.run(app.updater.initialize())
 
 # Load at end to ensure all prev variables have been set
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler

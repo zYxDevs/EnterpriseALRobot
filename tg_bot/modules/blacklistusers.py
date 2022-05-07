@@ -8,6 +8,7 @@ from tg_bot import (
     SUPPORT_USERS,
     SARDEGNA_USERS,
     WHITELIST_USERS,
+    KInit,
     app as application,
 )
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
@@ -139,7 +140,7 @@ def __user_info__(user_id):
     text = "Blacklisted: <b>{}</b>"
     if (
         user_id
-        in [777000, 1087968824, application.bot.id]
+        in [777000, 1087968824, KInit.bot_id]
         + SUDO_USERS
         + SARDEGNA_USERS
         + WHITELIST_USERS

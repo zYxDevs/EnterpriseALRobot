@@ -2,7 +2,7 @@ import threading
 
 from sqlalchemy.sql.sqltypes import BigInteger
 
-from tg_bot import app as application
+from tg_bot import KInit, app as application
 from tg_bot.modules.sql import BASE, SESSION
 from sqlalchemy import (
     Column,
@@ -73,7 +73,7 @@ INSERTION_LOCK = threading.RLock()
 
 def ensure_bot_in_db():
     with INSERTION_LOCK:
-        bot = Users(application.bot.id, application.bot.username)
+        bot = Users(KInit.bot_id, KInit.bot_username)
         SESSION.merge(bot)
         SESSION.commit()
 

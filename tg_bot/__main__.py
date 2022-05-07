@@ -49,6 +49,7 @@ from tg_bot.modules.helper_funcs.chat_status import is_user_admin
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigcallback, kigmsg
 from tg_bot.modules.helper_funcs.misc import paginate_modules
 from tg_bot.modules.language import gs
+from tg_bot.modules.log_channel import logging
 
 IMPORTED = {}
 MIGRATEABLE = []
@@ -595,35 +596,34 @@ async def migrate_chats(update: Update, context: CallbackContext):
     # raise DispatcherHandlerStop
 
 
-async def main():
+def main():
+    # log.info(f"Bot: @{app.bot.username}")
     app.add_error_handler(error_callback)
+    # await app.initialize()
     # application.add_error_handler(error_handler)
 
     if WEBHOOK:
         log.info("Using webhooks.")
         app.run_webhook(listen="127.0.0.1", port=PORT, url_path=TOKEN)
 
-        if CERT_PATH:
-            await app.bot.set_webhook(
-                url=URL + TOKEN, certificate=open(CERT_PATH, "rb")
-            )
-        else:
-            await app.bot.set_webhook(url=URL + TOKEN)
-
     else:
+        app.run_polling(drop_pending_updates=KInit.DROP_UPDATES, stop_signals=None)
+        KInit.bot_id = app.bot.id
+        KInit.bot_username = app.bot.username
+        KInit.bot_name = app.bot.first_name
         log.info(f"Kigyo started, Using long polling. | BOT: [@{app.bot.username}]")
-        KigyoINIT.bot_id = app.bot.id
-        KigyoINIT.bot_username = app.bot.username
-        KigyoINIT.bot_name = app.bot.first_name
-        app.run_polling(drop_pending_updates=KInit.DROP_UPDATES)
-    if len(argv) in {1, 3, 4}:
-        telethn.run_until_disconnected()
-    else:
-        telethn.disconnect()
+        # app.run_polling(drop_pending_updates=KInit.DROP_UPDATES, stop_signals=None)
+    # if len(argv) in {1, 3, 4}:
+    #    await telethn.start(bot_token=TOKEN)
+        # await telethn.run_until_disconnected()
+    #else:
+    #    telethn.disconnect()
     # app.idle()
+    # await app.updater.start_polling(drop_pending_updates=KInit.DROP_UPDATES)
 
 
 if __name__ == "__main__":
     log.info(f"[KIGYO] Successfully loaded modules: {str(ALL_MODULES)}")
-    telethn.start(bot_token=TOKEN)
-    asyncio.run(main())
+    main()
+    # telethn.start(bot_token=TOKEN)
+    # asyncio.run(main())

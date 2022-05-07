@@ -12,6 +12,7 @@ from tg_bot import (
     SUPPORT_USERS,
     SARDEGNA_USERS,
     WHITELIST_USERS,
+    KInit,
     sw,
     app as application,
     log,
@@ -521,7 +522,7 @@ def __user_info__(user_id):
     text = "Gbanned: <b>{}</b>"
     if user_id in [777000, 1087968824]:
         return ""
-    if user_id == application.bot.id:
+    if user_id == KInit.bot_id:
         return ""
     if int(user_id) in SUDO_USERS + SARDEGNA_USERS + WHITELIST_USERS:
         return ""

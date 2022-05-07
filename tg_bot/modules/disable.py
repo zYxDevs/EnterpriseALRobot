@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 from future.utils import string_types
@@ -48,7 +49,7 @@ if is_module_loaded(FILENAME):
                 if admin_ok:
                     ADMIN_CMDS.extend(command)
 
-        async def check_update(self, update):
+        def check_update(self, update):
             if not isinstance(update, Update) or not update.effective_message:
                 return
             message = update.effective_message
@@ -74,9 +75,10 @@ if is_module_loaded(FILENAME):
                         # disabled, admincmd, user admin
                         if sql.is_command_disabled(chat.id, command[0].lower()):
                             # check if command was disabled
-                            is_disabled = command[0] in ADMIN_CMDS and (await is_user_admin(
+                            is_ad = asyncio.ensure_future(is_user_admin(
                                 update, user.id
                             ))
+                            is_disabled = command[0] in ADMIN_CMDS and is_ad
                             return (args, filter_result) if is_disabled else None
                         return args, filter_result
                     else:

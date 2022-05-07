@@ -3,7 +3,7 @@ from io import BytesIO
 from time import sleep
 
 import tg_bot.modules.sql.users_sql as sql
-from tg_bot import DEV_USERS, log, OWNER_ID, app as application
+from tg_bot import DEV_USERS, KInit, log, OWNER_ID, app as application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus, sudo_plus
 from tg_bot.modules.sql.users_sql import get_all_users
 from telegram import Update
@@ -182,7 +182,7 @@ async def chat_checker(update: Update, context: CallbackContext):
 def __user_info__(user_id):
     if user_id in [777000, 1087968824]:
         return """Groups count: <code>N/A</code>"""
-    if user_id == application.bot.id:
+    if user_id == KInit.bot_id:
         return """Groups count: <code>N/A</code>"""
     num_chats = sql.get_user_num_chats(user_id)
     return f"""Groups count: <code>{num_chats}</code>"""

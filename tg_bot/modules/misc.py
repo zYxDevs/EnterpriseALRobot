@@ -23,7 +23,7 @@ from tg_bot import (
     sw,
     StartTime,
 )
-from tg_bot.__main__ import STATS, USER_INFO, TOKEN
+from tg_bot.__main__ import STATS, USER_INFO, KInit
 from tg_bot.modules.sql import SESSION
 from tg_bot.modules.helper_funcs.chat_status import user_admin, sudo_plus
 from tg_bot.modules.helper_funcs.extraction import extract_user
@@ -38,7 +38,7 @@ from platform import python_version
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigcallback
 
 MARKDOWN_HELP = f"""
-Markdown is a very powerful formatting tool supported by telegram. {application.bot.first_name} has some enhancements, to make sure that \
+Markdown is a very powerful formatting tool supported by telegram. {KInit.bot_name} has some enhancements, to make sure that \
 saved messages are correctly parsed, and to allow you to create buttons.
 
 - <code>_italic_</code>: wrapping text with '_' will produce italic text
