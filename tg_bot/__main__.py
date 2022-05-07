@@ -613,17 +613,17 @@ def main():
         KInit.bot_name = app.bot.first_name
         log.info(f"Kigyo started, Using long polling. | BOT: [@{app.bot.username}]")
         # app.run_polling(drop_pending_updates=KInit.DROP_UPDATES, stop_signals=None)
-    # if len(argv) in {1, 3, 4}:
+    if len(argv) in {1, 3, 4}:
     #    await telethn.start(bot_token=TOKEN)
-        # await telethn.run_until_disconnected()
-    #else:
-    #    telethn.disconnect()
+        telethn.run_until_disconnected()
+    else:
+        telethn.disconnect()
     # app.idle()
     # await app.updater.start_polling(drop_pending_updates=KInit.DROP_UPDATES)
 
 
 if __name__ == "__main__":
     log.info(f"[KIGYO] Successfully loaded modules: {str(ALL_MODULES)}")
+    telethn.start(bot_token=TOKEN)
     main()
-    # telethn.start(bot_token=TOKEN)
     # asyncio.run(main())
