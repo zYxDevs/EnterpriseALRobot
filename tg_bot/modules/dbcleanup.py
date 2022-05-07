@@ -3,7 +3,7 @@ from time import sleep
 
 import tg_bot.modules.sql.antispam_sql as gban_sql
 import tg_bot.modules.sql.users_sql as user_sql
-from tg_bot import DEV_USERS, OWNER_ID, application
+from tg_bot import DEV_USERS, OWNER_ID, app as application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest, Forbidden

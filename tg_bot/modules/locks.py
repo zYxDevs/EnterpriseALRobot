@@ -11,7 +11,7 @@ from telegram.ext import filters, CallbackContext
 from telegram.helpers import mention_html
 from typing import Optional
 import tg_bot.modules.sql.locks_sql as sql
-from tg_bot import application, log
+from tg_bot import app as application, log
 from tg_bot.modules.connection import connected
 from tg_bot.modules.helper_funcs.alternate import send_message, typing_action
 from tg_bot.modules.helper_funcs.chat_status import (
@@ -30,17 +30,17 @@ ad = AlphabetDetector()
 LOCK_TYPES = {
     "audio": filters.AUDIO,
     "voice": filters.VOICE,
-    "document": filters.DOCUMENT,
+    "document": filters.Document.ALL,
     "video": filters.VIDEO,
     "contact": filters.CONTACT,
     "photo": filters.PHOTO,
     "url": filters.Entity(MessageEntity.URL)
-    | filters.Caption_entity(MessageEntity.URL),
+    | filters.CaptionEntity(MessageEntity.URL),
     "bots": filters.StatusUpdate.NEW_CHAT_MEMBERS,
     "forward": filters.FORWARDED & ~filters.IS_AUTOMATIC_FORWARD,
     "game": filters.GAME,
     "location": filters.LOCATION,
-    "egame": filters.DICE,
+    "egame": filters.Dice.ALL,
     "rtl": "rtl",
     "button": "button",
     "inline": "inline",

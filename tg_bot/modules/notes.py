@@ -4,14 +4,14 @@ from io import BytesIO
 from typing import Optional
 
 import tg_bot.modules.sql.notes_sql as sql
-from tg_bot import log, application, SUDO_USERS
+from tg_bot import log, app as application, SUDO_USERS
 from tg_bot.modules.helper_funcs.chat_status import connection_status
 from tg_bot.modules.helper_funcs.misc import build_keyboard, revert_buttons
 from tg_bot.modules.helper_funcs.msg_types import get_note_type
 from tg_bot.modules.helper_funcs.handlers import MessageHandlerChecker
 from tg_bot.modules.helper_funcs.string_handling import escape_invalid_curly_brackets
 from telegram import (
-    MAX_MESSAGE_LENGTH,
+    #MAX_MESSAGE_LENGTH,
     InlineKeyboardMarkup,
     Message,
     Update,
@@ -23,11 +23,12 @@ from telegram.ext import (
     CallbackContext,
     filters,
 )
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, MessageLimit
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg, kigcallback
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
+MAX_MESSAGE_LENGTH = MessageLimit.TEXT_LENGTH
 JOIN_LOGGER = None
 FILE_MATCHER = re.compile(r"^###file_id(!photo)?###:(.*?)(?:\s|$)")
 STICKER_MATCHER = re.compile(r"^###sticker(!photo)?###:")

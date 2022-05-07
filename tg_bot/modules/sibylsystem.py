@@ -1,12 +1,12 @@
 from configparser import ConfigParser
 import os, logging, threading
 from telegram.error import BadRequest
-from telegram.ext.commandhandler import CommandHandler
-from telegram.ext.filters import Filters
-from telegram.ext.messagehandler import MessageHandler
+from telegram.ext import CommandHandler
+from telegram.ext import filters
+from telegram.ext import MessageHandler
 
 from ..modules.helper_funcs.chat_status import user_admin
-from .. import application
+from .. import app as application
 from telegram.ext import CallbackContext
 from telegram import Update
 from sqlalchemy import Column, String, Boolean

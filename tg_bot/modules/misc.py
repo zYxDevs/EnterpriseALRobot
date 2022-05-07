@@ -12,7 +12,7 @@ from telegram.helpers import mention_html, escape_markdown
 from subprocess import Popen, PIPE
 
 from tg_bot import (
-    application,
+    app as application,
     OWNER_ID,
     SUDO_USERS,
     SUPPORT_USERS,

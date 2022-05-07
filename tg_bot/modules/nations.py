@@ -1,14 +1,13 @@
 import html
-import json
-import os
-from typing import List, Optional
+from telegram.error import TelegramError
+from typing import Optional
 
-from telegram import Update, ParseMode, TelegramError
+from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
-
+from telegram.helpers import mention_html
+from telegram.constants import ParseMode
 from tg_bot import (
-    application,
+    app as application,
     WHITELIST_USERS,
     SARDEGNA_USERS,
     SUPPORT_USERS,
@@ -87,7 +86,7 @@ async def addsudo(update: Update, context: CallbackContext) -> str:
 @kigcmd(command="addsupport")
 @sudo_plus
 @gloggable
-def addsupport(
+async def addsupport(
     update: Update,
     context: CallbackContext,
 ) -> str:
@@ -130,7 +129,7 @@ def addsupport(
     )
 
     if chat.type != "private":
-        log_message = f"<b>{html.escape(chat.title)}:</b>\n" + log_message
+        log_message = f"<b>{html.escape(chat.title)}:</b>\n{log_message}"
 
     return log_message
 
@@ -147,8 +146,7 @@ async def addwhitelist(update: Update, context: CallbackContext) -> str:
     user_member = await bot.getChat(user_id)
     rt = ""
 
-    reply = check_user_id(user_id, bot)
-    if reply:
+    if reply := check_user_id(user_id, bot):
         await message.reply_text(reply)
         return ""
 
@@ -167,9 +165,8 @@ async def addwhitelist(update: Update, context: CallbackContext) -> str:
     sql.set_royal_role(user_id, "whitelists")
     WHITELIST_USERS.append(user_id)
 
-    await update.effective_message.reply_text(
-        rt + f"\nSuccessfully promoted {user_member.first_name} to a Whitelist user!"
-    )
+    await update.effective_message.reply_text(f"{rt}\nSuccessfully promoted {user_member.first_name} to a Whitelist user!")
+
 
     log_message = (
         f"#WHITELIST\n"
@@ -178,7 +175,7 @@ async def addwhitelist(update: Update, context: CallbackContext) -> str:
     )
 
     if chat.type != "private":
-        log_message = f"<b>{html.escape(chat.title)}:</b>\n" + log_message
+        log_message = f"<b>{html.escape(chat.title)}:</b>\n{log_message}"
 
     return log_message
 
@@ -195,8 +192,7 @@ async def addsardegna(update: Update, context: CallbackContext) -> str:
     user_member = await bot.getChat(user_id)
     rt = ""
 
-    reply = check_user_id(user_id, bot)
-    if reply:
+    if reply := check_user_id(user_id, bot):
         await message.reply_text(reply)
         return ""
 
@@ -399,7 +395,7 @@ Report abuse or ask us more on these at [Eagle Union](https://t.me/YorktownEagle
 """
 
 
-def send_nations(update):
+async def send_nations(update):
     await update.effective_message.reply_text(
         nations, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True
     )

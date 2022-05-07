@@ -165,6 +165,7 @@ app = (
 )
 
 asyncio.get_event_loop().run_until_complete(app.bot.initialize())
+updater = app.updater
 
 # Load at end to ensure all prev variables have been set
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler

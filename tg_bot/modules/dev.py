@@ -4,7 +4,7 @@ import re
 import subprocess
 import sys
 from time import sleep
-from ..import app as application
+# from ..import app as application
 from telegram.ext import CallbackQueryHandler
 from tg_bot import DEV_USERS, app as application, telethn, OWNER_ID
 from tg_bot.modules.helper_funcs.chat_status import dev_plus

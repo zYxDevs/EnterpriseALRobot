@@ -16,7 +16,7 @@ from tg_bot import (
     SARDEGNA_USERS,
     WHITELIST_USERS,
     sw,
-    application,
+    app as application,
 )
 from tg_bot.modules.helper_funcs.chat_status import (
     is_user_ban_protected,

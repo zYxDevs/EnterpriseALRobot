@@ -1,6 +1,6 @@
 import importlib
 
-from tg_bot import application
+from tg_bot import app as application
 from tg_bot.__main__ import (
     CHAT_SETTINGS,
     DATA_EXPORT,

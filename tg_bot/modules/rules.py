@@ -1,7 +1,7 @@
 from typing import Optional
 
 import tg_bot.modules.sql.rules_sql as sql
-from tg_bot import application
+from tg_bot import app as application
 from tg_bot.modules.helper_funcs.string_handling import markdown_parser
 from telegram import (
     InlineKeyboardButton,

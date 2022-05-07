@@ -42,7 +42,7 @@ class StickerSettings(BASE):
         )
 
 
-Stickersfilters.Table.Create(checkfirst=True)
+StickersFilters.__table__.create(checkfirst=True)
 StickerSettings.__table__.create(checkfirst=True)
 
 STICKERS_FILTER_INSERTION_LOCK = threading.RLock()
@@ -67,8 +67,7 @@ def add_to_stickers(chat_id, trigger):
 
 def rm_from_stickers(chat_id, trigger):
     with STICKERS_FILTER_INSERTION_LOCK:
-        stickers_filt = SESSION.query(StickersFilters).get((str(chat_id), trigger))
-        if stickers_filt:
+        if stickers_filt := SESSION.query(StickersFilters).get((str(chat_id), trigger)):
             if trigger in CHAT_STICKERS.get(str(chat_id), set()):  # sanity check
                 CHAT_STICKERS.get(str(chat_id), set()).remove(trigger)
 
@@ -94,8 +93,8 @@ def num_stickers_filters():
 def num_stickers_chat_filters(chat_id):
     try:
         return (
-            SESSION.query(Stickersfilters.CHAT_ID)
-            .filter(Stickersfilters.CHAT_ID == str(chat_id))
+            SESSION.query(StickersFilters.chat_id)
+            .filter(StickersFilters.chat_id == str(chat_id))
             .count()
         )
     finally:
@@ -104,7 +103,7 @@ def num_stickers_chat_filters(chat_id):
 
 def num_stickers_filter_chats():
     try:
-        return SESSION.query(func.count(distinct(Stickersfilters.CHAT_ID))).scalar()
+        return SESSION.query(func.count(distinct(StickersFilters.chat_id))).scalar()
     finally:
         SESSION.close()
 
@@ -142,8 +141,7 @@ def set_blacklist_strength(chat_id, blacklist_type, value):
 
 def get_blacklist_setting(chat_id):
     try:
-        setting = CHAT_BLSTICK_BLACKLISTS.get(str(chat_id))
-        if setting:
+        if setting := CHAT_BLSTICK_BLACKLISTS.get(str(chat_id)):
             return setting["blacklist_type"], setting["value"]
         else:
             return 1, "0"
@@ -155,7 +153,7 @@ def get_blacklist_setting(chat_id):
 def __load_CHAT_STICKERS():
     global CHAT_STICKERS
     try:
-        chats = SESSION.query(Stickersfilters.CHAT_ID).distinct().all()
+        chats = SESSION.query(StickersFilters.chat_id).distinct().all()
         for (chat_id,) in chats:  # remove tuple by ( ,)
             CHAT_STICKERS[chat_id] = []
 
@@ -187,7 +185,7 @@ def migrate_chat(old_chat_id, new_chat_id):
     with STICKERS_FILTER_INSERTION_LOCK:
         chat_filters = (
             SESSION.query(StickersFilters)
-            .filter(Stickersfilters.CHAT_ID == str(old_chat_id))
+            .filter(StickersFilters.chat_id == str(old_chat_id))
             .all()
         )
         for filt in chat_filters:

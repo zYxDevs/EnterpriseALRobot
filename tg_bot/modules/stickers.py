@@ -8,9 +8,10 @@ from PIL import Image
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    TelegramError,
+    # TelegramError,
     Update,
 )
+from telegram.error import TelegramError
 from telegram.ext import CallbackContext
 from telegram.helpers import mention_html
 from tg_bot.modules.helper_funcs.decorators import kigcmd

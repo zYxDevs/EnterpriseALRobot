@@ -1,14 +1,15 @@
 import html
 
-from telegram import Update, MAX_MESSAGE_LENGTH
+from telegram import Update
 from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, MessageLimit
 import tg_bot.modules.sql.userinfo_sql as sql
 from tg_bot import SUDO_USERS, DEV_USERS
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 from tg_bot.modules.helper_funcs.extraction import extract_user
 
+MAX_MESSAGE_LENGTH = MessageLimit.TEXT_LENGTH
 
 @kigcmd(command="me")
 async def about_me(update: Update, context: CallbackContext):
