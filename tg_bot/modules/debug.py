@@ -4,29 +4,29 @@ from telethon import events
 from telegram import Update
 from telegram.ext import CallbackContext, CommandHandler
 
-from tg_bot import telethn, dispatcher
+from tg_bot import telethn, application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
 
 DEBUG_MODE = False
 
 
 @dev_plus
-def debug(update: Update, context: CallbackContext):
+async def debug(update: Update, context: CallbackContext):
     global DEBUG_MODE
-    args = update.effective_message.text.split(None, 1)
+    args = await update.effective_message.text.split(None, 1)
     message = update.effective_message
     print(DEBUG_MODE)
     if len(args) > 1:
         if args[1] in ("yes", "on"):
             DEBUG_MODE = True
-            message.reply_text("Debug mode is now on.")
+            await message.reply_text("Debug mode is now on.")
         elif args[1] in ("no", "off"):
             DEBUG_MODE = False
-            message.reply_text("Debug mode is now off.")
+            await message.reply_text("Debug mode is now off.")
     elif DEBUG_MODE:
-        message.reply_text("Debug mode is currently on.")
+        await message.reply_text("Debug mode is currently on.")
     else:
-        message.reply_text("Debug mode is currently off.")
+        await message.reply_text("Debug mode is currently off.")
 
 
 @telethn.on(events.NewMessage(pattern="[/!].*"))
@@ -47,7 +47,7 @@ async def i_do_nothing_yes(event):
 
 
 DEBUG_HANDLER = CommandHandler("debug", debug)
-dispatcher.add_handler(DEBUG_HANDLER)
+application.add_handler(DEBUG_HANDLER)
 
 __mod_name__ = "Debug"
 __command_list__ = ["debug"]

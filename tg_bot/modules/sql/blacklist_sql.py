@@ -42,7 +42,7 @@ class BlacklistSettings(BASE):
         )
 
 
-BlackListFilters.__table__.create(checkfirst=True)
+BlackListfilters.Table.Create(checkfirst=True)
 BlacklistSettings.__table__.create(checkfirst=True)
 
 BLACKLIST_FILTER_INSERTION_LOCK = threading.RLock()
@@ -94,8 +94,8 @@ def num_blacklist_filters():
 def num_blacklist_chat_filters(chat_id):
     try:
         return (
-            SESSION.query(BlackListFilters.chat_id)
-            .filter(BlackListFilters.chat_id == str(chat_id))
+            SESSION.query(BlackListfilters.CHAT_ID)
+            .filter(BlackListfilters.CHAT_ID == str(chat_id))
             .count()
         )
     finally:
@@ -104,7 +104,7 @@ def num_blacklist_chat_filters(chat_id):
 
 def num_blacklist_filter_chats():
     try:
-        return SESSION.query(func.count(distinct(BlackListFilters.chat_id))).scalar()
+        return SESSION.query(func.count(distinct(BlackListfilters.CHAT_ID))).scalar()
     finally:
         SESSION.close()
 
@@ -153,7 +153,7 @@ def get_blacklist_setting(chat_id):
 def __load_chat_blacklists():
     global CHAT_BLACKLISTS
     try:
-        chats = SESSION.query(BlackListFilters.chat_id).distinct().all()
+        chats = SESSION.query(BlackListfilters.CHAT_ID).distinct().all()
         for (chat_id,) in chats:  # remove tuple by ( ,)
             CHAT_BLACKLISTS[chat_id] = []
 
@@ -185,7 +185,7 @@ def migrate_chat(old_chat_id, new_chat_id):
     with BLACKLIST_FILTER_INSERTION_LOCK:
         chat_filters = (
             SESSION.query(BlackListFilters)
-            .filter(BlackListFilters.chat_id == str(old_chat_id))
+            .filter(BlackListfilters.CHAT_ID == str(old_chat_id))
             .all()
         )
         for filt in chat_filters:

@@ -5,12 +5,13 @@ from telegram import ParseMode, Update, Chat
 from telegram.ext import CommandHandler, MessageHandler
 from telegram.utils.helpers import escape_markdown
 
-from tg_bot import dispatcher
+from tg_bot import application
 from tg_bot.modules.helper_funcs.handlers import CMD_STARTERS
 from tg_bot.modules.helper_funcs.misc import is_module_loaded
 from tg_bot.modules.helper_funcs.alternate import send_message, typing_action
 from tg_bot.modules.connection import connected
 from tg_bot.modules.language import gs
+
 
 def get_help(chat):
     return gs(chat, "disable_help")
@@ -35,7 +36,7 @@ if is_module_loaded(FILENAME):
     ADMIN_CMDS = []
 
     class DisableAbleCommandHandler(CommandHandler):
-        def __init__(self, command, callback, run_async=True, admin_ok=False, **kwargs):
+        def __init__(self, command, callback, block=False, admin_ok=False, **kwargs):
             super().__init__(command, callback, run_async=run_async, **kwargs)
             self.admin_ok = admin_ok
             if isinstance(command, string_types):
@@ -53,17 +54,17 @@ if is_module_loaded(FILENAME):
             message = update.effective_message
 
             if message.text and len(message.text) > 1:
-                fst_word = message.text.split(None, 1)[0]
+                fst_word = await message.text.split(None, 1)[0]
                 if len(fst_word) > 1 and any(
                     fst_word.startswith(start) for start in CMD_STARTERS
                 ):
-                    args = message.text.split()[1:]
+                    args = await message.text.split()[1:]
                     command = fst_word[1:].split("@")
                     command.append(message.bot.username)
 
                     if not (
                         command[0].lower() in self.command
-                        and command[1].lower() == message.bot.username.lower()
+                        and command[1].lower() == await message.bot.username.lower()
                     ):
                         return None
 
@@ -74,9 +75,9 @@ if is_module_loaded(FILENAME):
                         # disabled, admincmd, user admin
                         if sql.is_command_disabled(chat.id, command[0].lower()):
                             # check if command was disabled
-                            is_disabled = command[
-                                0
-                            ] in ADMIN_CMDS and is_user_admin(update, user.id)
+                            is_disabled = command[0] in ADMIN_CMDS and is_user_admin(
+                                update, user.id
+                            )
                             if not is_disabled:
                                 return None
                             else:
@@ -87,7 +88,7 @@ if is_module_loaded(FILENAME):
                         return False
 
     class DisableAbleMessageHandler(MessageHandler):
-        def __init__(self, pattern, callback, run_async=True, friendly="", **kwargs):
+        def __init__(self, pattern, callback, block=False, friendly="", **kwargs):
             super().__init__(pattern, callback, run_async=run_async, **kwargs)
             DISABLE_OTHER.append(friendly or pattern)
             self.friendly = friendly or pattern
@@ -101,15 +102,15 @@ if is_module_loaded(FILENAME):
 
     @user_admin
     @typing_action
-    def disable(update, context):
+    async def disable(update, context):
         chat = update.effective_chat  # type: Optional[Chat]
         user = update.effective_user
         args = context.args
 
         conn = connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
-            chat = dispatcher.bot.getChat(conn)
-            chat_name = dispatcher.bot.getChat(conn).title
+            chat = await application.bot.getChat(conn)
+            chat_name = await application.bot.getChat(conn).title
         else:
             if update.effective_message.chat.type == "private":
                 send_message(
@@ -146,16 +147,16 @@ if is_module_loaded(FILENAME):
 
     @user_admin
     @typing_action
-    def enable(update, context):
+    async def enable(update, context):
         chat = update.effective_chat  # type: Optional[Chat]
         user = update.effective_user
         args = context.args
 
         conn = connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
-            chat = dispatcher.bot.getChat(conn)
+            chat = await application.bot.getChat(conn)
             chat_id = conn
-            chat_name = dispatcher.bot.getChat(conn).title
+            chat_name = await application.bot.getChat(conn).title
         else:
             if update.effective_message.chat.type == "private":
                 send_message(
@@ -192,19 +193,19 @@ if is_module_loaded(FILENAME):
 
     @user_admin
     @typing_action
-    def list_cmds(update, context):
+    async def list_cmds(update, context):
         if DISABLE_CMDS + DISABLE_OTHER:
             result = "".join(
                 " - `{}`\n".format(escape_markdown(str(cmd)))
                 for cmd in set(DISABLE_CMDS + DISABLE_OTHER)
             )
 
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 "The following commands are toggleable:\n{}".format(result),
                 parse_mode=ParseMode.MARKDOWN,
             )
         else:
-            update.effective_message.reply_text("No commands can be disabled.")
+            await update.effective_message.reply_text("No commands can be disabled.")
 
     # do not async
     def build_curr_disabled(chat_id: Union[str, int]) -> str:
@@ -216,12 +217,12 @@ if is_module_loaded(FILENAME):
         return "The following commands are currently restricted:\n{}".format(result)
 
     @typing_action
-    def commands(update, context):
+    async def commands(update, context):
         chat = update.effective_chat
         user = update.effective_user
         conn = connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
-            chat = dispatcher.bot.getChat(conn)
+            chat = await application.bot.getChat(conn)
             chat_id = conn
         else:
             if update.effective_message.chat.type == "private":
@@ -271,21 +272,21 @@ It'll also allow you to autodelete them, stopping people from bluetexting.
 
     DISABLE_HANDLER = CommandHandler(
         "disable", disable, pass_args=True
-    )  # , filters=Filters.chat_type.groups)
+    )  # , filters=filters.ChatType.GROUPS)
     ENABLE_HANDLER = CommandHandler(
         "enable", enable, pass_args=True
-    )  # , filters=Filters.chat_type.groups)
+    )  # , filters=filters.ChatType.GROUPS)
     COMMANDS_HANDLER = CommandHandler(
         ["cmds", "disabled"], commands
-    )  # , filters=Filters.chat_type.groups)
+    )  # , filters=filters.ChatType.GROUPS)
     TOGGLE_HANDLER = CommandHandler(
         "listcmds", list_cmds
-    )  # , filters=Filters.chat_type.groups)
+    )  # , filters=filters.ChatType.GROUPS)
 
-    dispatcher.add_handler(DISABLE_HANDLER)
-    dispatcher.add_handler(ENABLE_HANDLER)
-    dispatcher.add_handler(COMMANDS_HANDLER)
-    dispatcher.add_handler(TOGGLE_HANDLER)
+    application.add_handler(DISABLE_HANDLER)
+    application.add_handler(ENABLE_HANDLER)
+    application.add_handler(COMMANDS_HANDLER)
+    application.add_handler(TOGGLE_HANDLER)
 
 else:
     DisableAbleCommandHandler = CommandHandler

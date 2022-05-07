@@ -24,20 +24,19 @@ ChatLangs.__table__.create(checkfirst=True)
 
 def set_lang(chat_id: str, lang: str) -> None:
     with LANG_LOCK:
-        curr = SESSION.query(ChatLangs).get(str(chat_id))
-        if not curr:
-            curr = ChatLangs(str(chat_id), lang)
-            SESSION.add(curr)
-            SESSION.flush()
-        else:
+        if curr := SESSION.query(ChatLangs).get(chat_id):
             curr.language = lang
 
-        CHAT_LANG[str(chat_id)] = lang
+        else:
+            curr = ChatLangs(chat_id, lang)
+            SESSION.add(curr)
+            SESSION.flush()
+        CHAT_LANG[chat_id] = lang
         SESSION.commit()
 
 
 def get_chat_lang(chat_id: str) -> str:
-    lang = CHAT_LANG.get(str(chat_id))
+    lang = CHAT_LANG.get(chat_id)
     if lang is None:
         lang = "en"
     return lang

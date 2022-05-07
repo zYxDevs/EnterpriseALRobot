@@ -209,11 +209,12 @@ reactions = [
     "(∩ᄑ_ᄑ)⊃━☆ﾟ*･｡*･:≡( ε:)",
 ]
 
-@kigcmd(command='react')
-def react(update: Update, context: CallbackContext):
+
+@kigcmd(command="react")
+async def react(update: Update, context: CallbackContext):
     message = update.effective_message
     react = random.choice(reactions)
     if message.reply_to_message:
-        message.reply_to_message.reply_text(react)
+        await message.reply_to_message.reply_text(react)
     else:
-        message.reply_text(react)
+        await message.reply_text(react)

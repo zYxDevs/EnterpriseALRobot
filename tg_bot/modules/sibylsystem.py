@@ -6,14 +6,16 @@ from telegram.ext.filters import Filters
 from telegram.ext.messagehandler import MessageHandler
 
 from ..modules.helper_funcs.chat_status import user_admin
-from .. import dispatcher
+from .. import application
 from telegram.ext import CallbackContext
 from telegram import Update
 from sqlalchemy import Column, String, Boolean
 
 from ..modules.sql import BASE, SESSION
 
-logging.info("Drag and drop Sibyl System Plugin by Sayan Biswas [github.com/Dank-del // t.me/dank_as_fuck] @Kaizoku")
+logging.info(
+    "Drag and drop Sibyl System Plugin by Sayan Biswas [github.com/Dank-del // t.me/dank_as_fuck] @Kaizoku"
+)
 
 
 class SibylSettings(BASE):
@@ -90,7 +92,7 @@ if sk:
         from SibylSystem import PsychoPass
         from SibylSystem.exceptions import GeneralException
     except ImportError as e:
-        logging.warning('Not loading Sibyl System plugin due to {}'.format(e))
+        logging.warning("Not loading Sibyl System plugin due to {}".format(e))
     try:
         client = PsychoPass(sk)
         logging.info("Connection to Sibyl System was successful...")
@@ -104,7 +106,7 @@ else:
 __load_sibylban_list()
 
 
-def sibyl_ban(update: Update, context: CallbackContext):
+async def sibyl_ban(update: Update, context: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
     user = update.effective_user
@@ -124,39 +126,54 @@ def sibyl_ban(update: Update, context: CallbackContext):
             return
         if data.banned:
             try:
-                bot.kick_chat_member(chat_id=chat.id, user_id=user.id)
+                await bot.ban_chat_member(chat_id=chat.id, user_id=user.id)
             except BadRequest:
                 return
             except BaseException as e:
-                logging.error("Failed to ban {} in {} due to {}".format(user.id, chat.id, e))
-            txt = '''<b>Dominator locked on</b> {}\n'''.format(user.mention_html())
+                logging.error(
+                    "Failed to ban {} in {} due to {}".format(user.id, chat.id, e)
+                )
+            txt = """<b>Dominator locked on</b> {}\n""".format(user.mention_html())
             txt += "Target was Eliminated with <b>{}</b>\n\n".format(
-                "Lethal Eliminator" if not data.is_bot else "Destroy Decomposer")
+                "Lethal Eliminator" if not data.is_bot else "Destroy Decomposer"
+            )
             txt += "<b>Reason:</b> <code>{}</code>\n".format(data.reason)
-            txt += "<b>Ban Flag(s):</b> <code>{}</code>\n".format(", ".join(data.ban_flags))
+            txt += "<b>Ban Flag(s):</b> <code>{}</code>\n".format(
+                ", ".join(data.ban_flags)
+            )
             txt += "<b>Inspector ID:</b> <code>{}</code>\n".format(data.banned_by)
             txt += "<b>Ban time:</b> <code>{}</code>\n\n".format(data.date)
-            txt += "<i>If the enforcement was unjust in any way, kindly report it to @PublicSafetyBureau or disable " \
-                   "this feature using /sibylban</i> "
-            message.reply_html(text=txt, disable_web_page_preview=True)
+            txt += (
+                "<i>If the enforcement was unjust in any way, kindly report it to @PublicSafetyBureau or disable "
+                "this feature using /sibylban</i> "
+            )
+            await message.reply_html(text=txt, disable_web_page_preview=True)
 
 
 @user_admin
-def toggle_sibyl(update: Update, _: CallbackContext):
+async def toggle_sibyl(update: Update, _: CallbackContext):
     message = update.effective_message
     chat = update.effective_chat
     do = does_chat_sibylban(chat.id)
     if not do:
         enable_sibyl(chat.id)
-        message.reply_text("Dominator enabled for {}".format(chat.title))
+        await message.reply_text("Dominator enabled for {}".format(chat.title))
     else:
         disable_sibyl(chat.id)
-        message.reply_text("Dominator disabled for {}".format(chat.title))
+        await message.reply_text("Dominator disabled for {}".format(chat.title))
 
     return
 
 
-dispatcher.add_handler(MessageHandler(filters=Filters.chat_type.groups, callback=sibyl_ban), group=101)
-dispatcher.add_handler(
-    CommandHandler(command="sibylban", callback=toggle_sibyl, run_async=True, filters=Filters.chat_type.groups),
-    group=100)
+application.add_handler(
+    MessageHandler(filters=filters.ChatType.GROUPS, callback=sibyl_ban), group=101
+)
+application.add_handler(
+    CommandHandler(
+        command="sibylban",
+        callback=toggle_sibyl,
+        block=False,
+        filters=filters.ChatType.GROUPS,
+    ),
+    group=100,
+)

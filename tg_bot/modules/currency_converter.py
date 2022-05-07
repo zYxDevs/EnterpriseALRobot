@@ -4,16 +4,17 @@ from telegram import Update, ParseMode
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
-@kigcmd(command='cash')
-def convert(update: Update, context: CallbackContext):
-    args = update.effective_message.text.split(" ")
+
+@kigcmd(command="cash")
+async def convert(update: Update, context: CallbackContext):
+    args = await update.effective_message.text.split(" ")
 
     if len(args) == 4:
         try:
             orig_cur_amount = float(args[1])
 
         except ValueError:
-            update.effective_message.reply_text("Invalid Amount Of Currency")
+            await update.effective_message.reply_text("Invalid Amount Of Currency")
             return
 
         orig_cur = args[2].upper()
@@ -33,22 +34,25 @@ def convert(update: Update, context: CallbackContext):
                 response["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
             )
         except KeyError:
-            update.effective_message.reply_text("Currency Not Supported.")
+            await update.effective_message.reply_text("Currency Not Supported.")
             return
         new_cur_amount = round(orig_cur_amount * current_rate, 5)
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             f"{orig_cur_amount} {orig_cur} = {new_cur_amount} {new_cur}"
         )
 
     elif len(args) == 1:
-        update.effective_message.reply_text(__help__, parse_mode=ParseMode.MARKDOWN)
+        await update.effective_message.reply_text(
+            __help__, parse_mode=ParseMode.MARKDOWN
+        )
 
     else:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             f"*Invalid Args!!:* Required 3 But Passed {len(args) -1}",
             parse_mode=ParseMode.MARKDOWN,
         )
-        
+
+
 __help__ = """
  - /cash : currency converter
  example syntax: /cash 1 USD INR

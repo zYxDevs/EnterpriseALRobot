@@ -3,8 +3,9 @@ from telegram import ParseMode, Update
 from telegram.ext import CallbackContext, run_async
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
+
 @kigcmd(command=["ud", "urban"])
-def ud(update: Update, context: CallbackContext):
+async def ud(update: Update, context: CallbackContext):
     message = update.effective_message
     text = message.text[len("/ud ") :]
     results = requests.get(
@@ -14,4 +15,4 @@ def ud(update: Update, context: CallbackContext):
         reply_text = f'*{text}*\n\n{results["list"][0]["definition"]}\n\n_{results["list"][0]["example"]}_'
     except:
         reply_text = "No results found."
-    message.reply_text(reply_text, parse_mode=ParseMode.MARKDOWN)
+    await message.reply_text(reply_text, parse_mode=ParseMode.MARKDOWN)

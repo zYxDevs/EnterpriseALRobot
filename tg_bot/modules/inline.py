@@ -7,8 +7,14 @@ from typing import List
 from uuid import uuid4
 
 import requests
-from telegram import InlineQueryResultArticle, ParseMode, InputTextMessageContent, Update, InlineKeyboardMarkup, \
-    InlineKeyboardButton
+from telegram import (
+    InlineQueryResultArticle,
+    ParseMode,
+    InputTextMessageContent,
+    Update,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 from telegram import __version__
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
@@ -22,7 +28,8 @@ from tg_bot import (
     DEV_USERS,
     SARDEGNA_USERS,
     WHITELIST_USERS,
-    sw, log
+    sw,
+    log,
 )
 from tg_bot.modules.helper_funcs.misc import article
 from tg_bot.modules.helper_funcs.decorators import kiginline
@@ -33,8 +40,9 @@ def remove_prefix(text, prefix):
         text = text.replace(prefix, "", 1)
     return text
 
+
 @kiginline()
-def inlinequery(update: Update, _) -> None:
+async def inlinequery(update: Update, _) -> None:
     """
     Main InlineQueryHandler callback.
     """
@@ -49,7 +57,7 @@ def inlinequery(update: Update, _) -> None:
         ".anilist": media_query,
     }
 
-    if (f := query.split(" ", 1)[0]) in inline_funcs:
+    if (f := await query.split(" ", 1)[0]) in inline_funcs:
         inline_funcs[f](remove_prefix(query, f).strip(), update, user)
     else:
         inline_help_dicts = [
@@ -60,7 +68,7 @@ def inlinequery(update: Update, _) -> None:
             #                    "username or telegram id",
             #    "thumb_urL": "https://telegra.ph/file/3ce9045b1c7faf7123c67.jpg",
             #    "keyboard": ".spb ",
-            #},
+            # },
             {
                 "title": "Account info on Kigyo",
                 "description": "Look up a Telegram account in Kigyo database",
@@ -96,9 +104,7 @@ def inlinequery(update: Update, _) -> None:
                             [
                                 InlineKeyboardButton(
                                     text="Click Here",
-                                    switch_inline_query_current_chat=ihelp[
-                                        "keyboard"
-                                    ],
+                                    switch_inline_query_current_chat=ihelp["keyboard"],
                                 )
                             ]
                         ]
@@ -106,7 +112,7 @@ def inlinequery(update: Update, _) -> None:
                 )
             )
 
-        update.inline_query.answer(results, cache_time=5)
+        await update.inline_query.answer(results, cache_time=5)
 
 
 def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
@@ -117,14 +123,14 @@ def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
 
     try:
-        search = query.split(" ", 1)[1]
+        search = await query.split(" ", 1)[1]
     except IndexError:
         search = user_id
 
     try:
-        user = bot.get_chat(int(search))
+        user = await bot.get_chat(int(search))
     except (BadRequest, ValueError):
-        user = bot.get_chat(user_id)
+        user = await bot.get_chat(user_id)
 
     chat = update.effective_chat
     sql.update_user(user.id, user.username)
@@ -177,30 +183,39 @@ def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
     num_chats = sql.get_user_num_chats(user.id)
     text += f"\n• <b>Chat count</b>: <code>{num_chats}</code>"
 
-
-
-
-    kb = InlineKeyboardMarkup([[InlineKeyboardButton(text="Report Error", url="https://t.me/YorktownEagleUnion"), InlineKeyboardButton(text="Search again", switch_inline_query_current_chat=".info ",)]])
-
+    kb = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text="Report Error", url="https://t.me/YorktownEagleUnion"
+                ),
+                InlineKeyboardButton(
+                    text="Search again",
+                    switch_inline_query_current_chat=".info ",
+                ),
+            ]
+        ]
+    )
 
     results = [
         InlineQueryResultArticle(
             id=str(uuid4()),
             title=f"User info of {html.escape(user.first_name)}",
-            input_message_content=InputTextMessageContent(text, parse_mode=ParseMode.HTML,
-                                                          disable_web_page_preview=True),
-            reply_markup=kb
+            input_message_content=InputTextMessageContent(
+                text, parse_mode=ParseMode.HTML, disable_web_page_preview=True
+            ),
+            reply_markup=kb,
         ),
     ]
 
-    update.inline_query.answer(results, cache_time=5)
+    await update.inline_query.answer(results, cache_time=5)
 
 
 def about(query: str, update: Update, context: CallbackContext) -> None:
     """Handle the inline query."""
     query = update.inline_query.query
     user_id = update.effective_user.id
-    user = context.bot.get_chat(user_id)
+    user = await context.bot.get_chat(user_id)
     sql.update_user(user.id, user.username)
     about_text = f"""
     Kigyo (@{context.bot.username})
@@ -209,27 +224,42 @@ def about(query: str, update: Update, context: CallbackContext) -> None:
     Running on Python {python_version()}
     """
     results: list = []
-    kb = InlineKeyboardMarkup([[InlineKeyboardButton(text="Support", url="https://t.me/YorktownEagleUnion"), InlineKeyboardButton(text="Channel", url="https://t.me/KigyoUpdates"), InlineKeyboardButton(text='Ping', callback_data='pingCB')], [InlineKeyboardButton(text="GitLab", url="https://www.gitlab.com/Dank-del/EnterpriseALRobot"), InlineKeyboardButton(text="GitHub", url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",)]])
-
+    kb = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text="Support", url="https://t.me/YorktownEagleUnion"
+                ),
+                InlineKeyboardButton(text="Channel", url="https://t.me/KigyoUpdates"),
+                InlineKeyboardButton(text="Ping", callback_data="pingCB"),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="GitLab",
+                    url="https://www.gitlab.com/Dank-del/EnterpriseALRobot",
+                ),
+                InlineKeyboardButton(
+                    text="GitHub",
+                    url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",
+                ),
+            ],
+        ]
+    )
 
     results.append(
-
-        InlineQueryResultArticle
-            (
+        InlineQueryResultArticle(
             id=str(uuid4()),
             title=f"About Kigyo (@{context.bot.username})",
-            input_message_content=InputTextMessageContent(about_text, parse_mode=ParseMode.MARKDOWN,
-                                                          disable_web_page_preview=True),
-            reply_markup=kb
+            input_message_content=InputTextMessageContent(
+                about_text, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True
+            ),
+            reply_markup=kb,
         )
     )
-    update.inline_query.answer(results)
+    await update.inline_query.answer(results)
 
 
-
-
-
-MEDIA_QUERY = '''query ($search: String) {
+MEDIA_QUERY = """query ($search: String) {
   Page (perPage: 10) {
     media (search: $search) {
       id
@@ -260,7 +290,7 @@ MEDIA_QUERY = '''query ($search: String) {
       siteUrl
     }
   }
-}'''
+}"""
 
 
 def media_query(query: str, update: Update, context: CallbackContext) -> None:
@@ -272,18 +302,23 @@ def media_query(query: str, update: Update, context: CallbackContext) -> None:
 
     try:
         results: List = []
-        r = requests.post('https://graphql.anilist.co',
-                          data=json.dumps({'query': MEDIA_QUERY, 'variables': {'search': query}}),
-                          headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
+        r = requests.post(
+            "https://graphql.anilist.co",
+            data=json.dumps({"query": MEDIA_QUERY, "variables": {"search": query}}),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
         res = r.json()
-        data = res['data']['Page']['media']
+        data = res["data"]["Page"]["media"]
         res = data
         for data in res:
             title_en = data["title"].get("english") or "N/A"
             title_ja = data["title"].get("romaji") or "N/A"
             format = data.get("format") or "N/A"
             type = data.get("type") or "N/A"
-            bannerimg = data.get("bannerImage") or "https://telegra.ph/file/cc83a0b7102ad1d7b1cb3.jpg"
+            bannerimg = (
+                data.get("bannerImage")
+                or "https://telegra.ph/file/cc83a0b7102ad1d7b1cb3.jpg"
+            )
             try:
                 des = data.get("description").replace("<br>", "").replace("</br>", "")
                 description = des.replace("<i>", "").replace("</i>", "") or "N/A"
@@ -296,15 +331,17 @@ def media_query(query: str, update: Update, context: CallbackContext) -> None:
                 description = description or "N/A"
 
             if len((str(description))) > 700:
-                description = f'{description[:700]}.....'
+                description = f"{description[:700]}....."
 
             avgsc = data.get("averageScore") or "N/A"
             status = data.get("status") or "N/A"
             genres = data.get("genres") or "N/A"
             genres = ", ".join(genres)
-            img = f"https://img.anili.st/media/{data['id']}" or "https://telegra.ph/file/cc83a0b7102ad1d7b1cb3.jpg"
+            img = (
+                f"https://img.anili.st/media/{data['id']}"
+                or "https://telegra.ph/file/cc83a0b7102ad1d7b1cb3.jpg"
+            )
             aurl = data.get("siteUrl")
-
 
             kb = InlineKeyboardMarkup(
                 [
@@ -317,9 +354,9 @@ def media_query(query: str, update: Update, context: CallbackContext) -> None:
                             text="Search again",
                             switch_inline_query_current_chat=".anilist ",
                         ),
-
                     ],
-                ])
+                ]
+            )
 
             txt = f"<b>{title_en} | {title_ja}</b>\n"
             txt += f"<b>Format</b>: <code>{format}</code>\n"
@@ -331,20 +368,43 @@ def media_query(query: str, update: Update, context: CallbackContext) -> None:
             txt += f"<a href='{img}'>&#xad</a>"
 
             results.append(
-                InlineQueryResultArticle
-                    (
+                InlineQueryResultArticle(
                     id=str(uuid4()),
                     title=f"{title_en} | {title_ja} | {format}",
                     thumb_url=img,
                     description=f"{description}",
-                    input_message_content=InputTextMessageContent(txt, parse_mode=ParseMode.HTML,
-                                                                  disable_web_page_preview=False),
-                    reply_markup=kb
+                    input_message_content=InputTextMessageContent(
+                        txt, parse_mode=ParseMode.HTML, disable_web_page_preview=False
+                    ),
+                    reply_markup=kb,
                 )
             )
     except Exception as e:
-        kb = InlineKeyboardMarkup([[InlineKeyboardButton(text="Report error", url="t.me/YorktownEagleUnion"), InlineKeyboardButton(text="Search again", switch_inline_query_current_chat=".anilist ")]])
+        kb = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="Report error", url="t.me/YorktownEagleUnion"
+                    ),
+                    InlineKeyboardButton(
+                        text="Search again",
+                        switch_inline_query_current_chat=".anilist ",
+                    ),
+                ]
+            ]
+        )
 
-        results.append(InlineQueryResultArticle(id=str(uuid4()), title=f"Media {query} not found", input_message_content=InputTextMessageContent(f"Media {query} not found due to {e}", parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True), reply_markup=kb))
+        results.append(
+            InlineQueryResultArticle(
+                id=str(uuid4()),
+                title=f"Media {query} not found",
+                input_message_content=InputTextMessageContent(
+                    f"Media {query} not found due to {e}",
+                    parse_mode=ParseMode.MARKDOWN,
+                    disable_web_page_preview=True,
+                ),
+                reply_markup=kb,
+            )
+        )
 
-    update.inline_query.answer(results, cache_time=5)
+    await update.inline_query.answer(results, cache_time=5)

@@ -65,7 +65,7 @@ class WarnSettings(BASE):
 
 
 Warns.__table__.create(checkfirst=True)
-WarnFilters.__table__.create(checkfirst=True)
+Warnfilters.Table.Create(checkfirst=True)
 WarnSettings.__table__.create(checkfirst=True)
 
 WARN_INSERTION_LOCK = threading.RLock()
@@ -171,7 +171,7 @@ def get_chat_warn_triggers(chat_id):
 def get_chat_warn_filters(chat_id):
     try:
         return (
-            SESSION.query(WarnFilters).filter(WarnFilters.chat_id == str(chat_id)).all()
+            SESSION.query(WarnFilters).filter(Warnfilters.CHAT_ID == str(chat_id)).all()
         )
     finally:
         SESSION.close()
@@ -244,8 +244,8 @@ def num_warn_filters():
 def num_warn_chat_filters(chat_id):
     try:
         return (
-            SESSION.query(WarnFilters.chat_id)
-            .filter(WarnFilters.chat_id == str(chat_id))
+            SESSION.query(Warnfilters.CHAT_ID)
+            .filter(Warnfilters.CHAT_ID == str(chat_id))
             .count()
         )
     finally:
@@ -254,7 +254,7 @@ def num_warn_chat_filters(chat_id):
 
 def num_warn_filter_chats():
     try:
-        return SESSION.query(func.count(distinct(WarnFilters.chat_id))).scalar()
+        return SESSION.query(func.count(distinct(Warnfilters.CHAT_ID))).scalar()
     finally:
         SESSION.close()
 
@@ -262,7 +262,7 @@ def num_warn_filter_chats():
 def __load_chat_warn_filters():
     global WARN_FILTERS
     try:
-        chats = SESSION.query(WarnFilters.chat_id).distinct().all()
+        chats = SESSION.query(Warnfilters.CHAT_ID).distinct().all()
         for (chat_id,) in chats:  # remove tuple by ( ,)
             WARN_FILTERS[chat_id] = []
 
@@ -291,7 +291,7 @@ def migrate_chat(old_chat_id, new_chat_id):
     with WARN_FILTER_INSERTION_LOCK:
         chat_filters = (
             SESSION.query(WarnFilters)
-            .filter(WarnFilters.chat_id == str(old_chat_id))
+            .filter(Warnfilters.CHAT_ID == str(old_chat_id))
             .all()
         )
         for filt in chat_filters:

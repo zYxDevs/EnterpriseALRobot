@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext
 from telegram.utils.helpers import mention_html
 
 from tg_bot import (
-    dispatcher,
+    application,
     WHITELIST_USERS,
     SARDEGNA_USERS,
     SUPPORT_USERS,
@@ -22,6 +22,7 @@ from tg_bot.modules.log_channel import gloggable
 from tg_bot.modules.sql import nation_sql as sql
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
+
 def check_user_id(user_id: int, context: CallbackContext) -> Optional[str]:
     bot = context.bot
     if not user_id:
@@ -33,25 +34,26 @@ def check_user_id(user_id: int, context: CallbackContext) -> Optional[str]:
     else:
         return None
 
-@kigcmd(command='addsudo')
+
+@kigcmd(command="addsudo")
 @dev_plus
 @gloggable
-def addsudo(update: Update, context: CallbackContext) -> str:
+async def addsudo(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
     rt = ""
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUDO_USERS:
-        message.reply_text("This member is already a Sudo user")
+        await message.reply_text("This member is already a Sudo user")
         return ""
 
     if user_id in SUPPORT_USERS:
@@ -66,11 +68,8 @@ def addsudo(update: Update, context: CallbackContext) -> str:
     sql.set_royal_role(user_id, "sudos")
     SUDO_USERS.append(user_id)
 
-    update.effective_message.reply_text(
-        rt
-        + "\nSuccessfully promoted {} to Sudo!".format(
-            user_member.first_name
-        )
+    await update.effective_message.reply_text(
+        rt + "\nSuccessfully promoted {} to Sudo!".format(user_member.first_name)
     )
 
     log_message = (
@@ -85,7 +84,7 @@ def addsudo(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command='addsupport')
+@kigcmd(command="addsupport")
 @sudo_plus
 @gloggable
 def addsupport(
@@ -97,12 +96,12 @@ def addsupport(
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
     rt = ""
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUDO_USERS:
@@ -110,7 +109,7 @@ def addsupport(
         SUDO_USERS.remove(user_id)
 
     if user_id in SUPPORT_USERS:
-        message.reply_text("This user is already a Support user.")
+        await message.reply_text("This user is already a Support user.")
         return ""
 
     if user_id in WHITELIST_USERS:
@@ -120,7 +119,7 @@ def addsupport(
     sql.set_royal_role(user_id, "supports")
     SUPPORT_USERS.append(user_id)
 
-    update.effective_message.reply_text(
+    await update.effective_message.reply_text(
         rt + f"\n{user_member.first_name} was added as a Support user!"
     )
 
@@ -136,21 +135,21 @@ def addsupport(
     return log_message
 
 
-@kigcmd(command='addwhitelist')
+@kigcmd(command="addwhitelist")
 @sudo_plus
 @gloggable
-def addwhitelist(update: Update, context: CallbackContext) -> str:
+async def addwhitelist(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
     rt = ""
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUDO_USERS:
@@ -162,13 +161,13 @@ def addwhitelist(update: Update, context: CallbackContext) -> str:
         SUPPORT_USERS.remove(user_id)
 
     if user_id in WHITELIST_USERS:
-        message.reply_text("This user is already a Whitelist user.")
+        await message.reply_text("This user is already a Whitelist user.")
         return ""
 
     sql.set_royal_role(user_id, "whitelists")
     WHITELIST_USERS.append(user_id)
 
-    update.effective_message.reply_text(
+    await update.effective_message.reply_text(
         rt + f"\nSuccessfully promoted {user_member.first_name} to a Whitelist user!"
     )
 
@@ -184,21 +183,21 @@ def addwhitelist(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command='addsardegna')
+@kigcmd(command="addsardegna")
 @sudo_plus
 @gloggable
-def addsardegna(update: Update, context: CallbackContext) -> str:
+async def addsardegna(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
     rt = ""
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUDO_USERS:
@@ -214,13 +213,13 @@ def addsardegna(update: Update, context: CallbackContext) -> str:
         WHITELIST_USERS.remove(user_id)
 
     if user_id in SARDEGNA_USERS:
-        message.reply_text("This user is already a Sardegna.")
+        await message.reply_text("This user is already a Sardegna.")
         return ""
 
     sql.set_royal_role(user_id, "sardegnas")
     SARDEGNA_USERS.append(user_id)
 
-    update.effective_message.reply_text(
+    await update.effective_message.reply_text(
         rt + f"\nSuccessfully promoted {user_member.first_name} to a Sardegna Nation!"
     )
 
@@ -236,24 +235,26 @@ def addsardegna(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command='removesudo')
+@kigcmd(command="removesudo")
 @dev_plus
 @gloggable
-def removesudo(update: Update, context: CallbackContext) -> str:
+async def removesudo(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUDO_USERS:
-        message.reply_text("Requested Eagle Union to demote this user to Civilian")
+        await message.reply_text(
+            "Requested Eagle Union to demote this user to Civilian"
+        )
         SUDO_USERS.remove(user_id)
         sql.remove_royal(user_id)
 
@@ -269,28 +270,30 @@ def removesudo(update: Update, context: CallbackContext) -> str:
         return log_message
 
     else:
-        message.reply_text("This user is not a Sudo user!")
+        await message.reply_text("This user is not a Sudo user!")
         return ""
 
 
-@kigcmd(command='removesupport')
+@kigcmd(command="removesupport")
 @sudo_plus
 @gloggable
-def removesupport(update: Update, context: CallbackContext) -> str:
+async def removesupport(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SUPPORT_USERS:
-        message.reply_text("Requested Eagle Union to demote this user to Civilian")
+        await message.reply_text(
+            "Requested Eagle Union to demote this user to Civilian"
+        )
         SUPPORT_USERS.remove(user_id)
         sql.remove_royal(user_id)
 
@@ -306,28 +309,28 @@ def removesupport(update: Update, context: CallbackContext) -> str:
         return log_message
 
     else:
-        message.reply_text("This user is not a Support user!")
+        await message.reply_text("This user is not a Support user!")
         return ""
 
 
-@kigcmd(command='removewhitelist')
+@kigcmd(command="removewhitelist")
 @sudo_plus
 @gloggable
-def removewhitelist(update: Update, context: CallbackContext) -> str:
+async def removewhitelist(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in WHITELIST_USERS:
-        message.reply_text("Demoting to normal user")
+        await message.reply_text("Demoting to normal user")
         WHITELIST_USERS.remove(user_id)
         sql.remove_royal(user_id)
 
@@ -342,28 +345,28 @@ def removewhitelist(update: Update, context: CallbackContext) -> str:
 
         return log_message
     else:
-        message.reply_text("This user is not a Whitelist user!")
+        await message.reply_text("This user is not a Whitelist user!")
         return ""
 
 
-@kigcmd(command='removesardegna')
+@kigcmd(command="removesardegna")
 @sudo_plus
 @gloggable
-def removesardegna(update: Update, context: CallbackContext) -> str:
+async def removesardegna(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     chat = update.effective_chat
     bot, args = context.bot, context.args
     user_id = extract_user(message, args)
-    user_member = bot.getChat(user_id)
+    user_member = await bot.getChat(user_id)
 
     reply = check_user_id(user_id, bot)
     if reply:
-        message.reply_text(reply)
+        await message.reply_text(reply)
         return ""
 
     if user_id in SARDEGNA_USERS:
-        message.reply_text("Demoting to normal user")
+        await message.reply_text("Demoting to normal user")
         SARDEGNA_USERS.remove(user_id)
         sql.remove_royal(user_id)
 
@@ -378,8 +381,9 @@ def removesardegna(update: Update, context: CallbackContext) -> str:
 
         return log_message
     else:
-        message.reply_text("This user is not a Sardegna Nation!")
+        await message.reply_text("This user is not a Sardegna Nation!")
         return ""
+
 
 # I added extra new lines
 nations = """ Kigyō has bot access levels we call as *"Nation Levels"*
@@ -396,85 +400,91 @@ Report abuse or ask us more on these at [Eagle Union](https://t.me/YorktownEagle
 
 
 def send_nations(update):
-    update.effective_message.reply_text(
+    await update.effective_message.reply_text(
         nations, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True
     )
 
-@kigcmd(command='removesardegna')
+
+@kigcmd(command="removesardegna")
 @whitelist_plus
-def whitelistlist(update: Update, context: CallbackContext):
+async def whitelistlist(update: Update, context: CallbackContext):
     bot = context.bot
     reply = "<b>Known Neptunia Nations :</b>\n"
     for each_user in WHITELIST_USERS:
         user_id = int(each_user)
         try:
-            user = bot.get_chat(user_id)
+            user = await bot.get_chat(user_id)
 
             reply += f"• {mention_html(user_id, user.first_name)}\n"
         except TelegramError:
             pass
-    update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+    await update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
 
-@kigcmd(command='sardegnas')
+
+@kigcmd(command="sardegnas")
 @whitelist_plus
-def Sardegnalist(update: Update, context: CallbackContext):
+async def Sardegnalist(update: Update, context: CallbackContext):
     bot = context.bot
     reply = "<b>Known Sardegna Nations :</b>\n"
     for each_user in SARDEGNA_USERS:
         user_id = int(each_user)
         try:
-            user = bot.get_chat(user_id)
+            user = await bot.get_chat(user_id)
             reply += f"• {mention_html(user_id, user.first_name)}\n"
         except TelegramError:
             pass
-    update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+    await update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+
 
 @kigcmd(command=["supportlist", "sakuras"])
 @whitelist_plus
-def supportlist(update: Update, context: CallbackContext):
+async def supportlist(update: Update, context: CallbackContext):
     bot = context.bot
     reply = "<b>Known Sakura Nations :</b>\n"
     for each_user in SUPPORT_USERS:
         user_id = int(each_user)
         try:
-            user = bot.get_chat(user_id)
+            user = await bot.get_chat(user_id)
             reply += f"• {mention_html(user_id, user.first_name)}\n"
         except TelegramError:
             pass
-    update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+    await update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+
 
 @kigcmd(command=["sudolist", "royals"])
 @whitelist_plus
-def sudolist(update: Update, context: CallbackContext):
+async def sudolist(update: Update, context: CallbackContext):
     bot = context.bot
     true_sudo = list(set(SUDO_USERS) - set(DEV_USERS))
     reply = "<b>Known Royal Nations :</b>\n"
     for each_user in true_sudo:
         user_id = int(each_user)
         try:
-            user = bot.get_chat(user_id)
+            user = await bot.get_chat(user_id)
             reply += f"• {mention_html(user_id, user.first_name)}\n"
         except TelegramError:
             pass
-    update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+    await update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+
 
 @kigcmd(command=["devlist", "eagle"])
 @whitelist_plus
-def devlist(update: Update, context: CallbackContext):
+async def devlist(update: Update, context: CallbackContext):
     bot = context.bot
     true_dev = list(set(DEV_USERS) - {OWNER_ID})
     reply = "<b>Eagle Union Members :</b>\n"
     for each_user in true_dev:
         user_id = int(each_user)
         try:
-            user = bot.get_chat(user_id)
+            user = await bot.get_chat(user_id)
             reply += f"• {mention_html(user_id, user.first_name)}\n"
         except TelegramError:
             pass
-    update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
+    await update.effective_message.reply_text(reply, parse_mode=ParseMode.HTML)
 
 
 from tg_bot.modules.language import gs
+
 
 def get_help(chat):
     return gs(chat, "nation_help")

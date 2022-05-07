@@ -116,7 +116,7 @@ class Buttons(BASE):
         self.same_line = same_line
 
 
-CustomFilters.__table__.create(checkfirst=True)
+Customfilters.Table.Create(checkfirst=True)
 Buttons.__table__.create(checkfirst=True)
 
 CUST_FILT_LOCK = threading.RLock()
@@ -268,9 +268,9 @@ def get_chat_filters(chat_id):
     try:
         return (
             SESSION.query(CustomFilters)
-            .filter(CustomFilters.chat_id == str(chat_id))
-            .order_by(func.length(CustomFilters.keyword).desc())
-            .order_by(CustomFilters.keyword.asc())
+            .filter(Customfilters.CHAT_ID == str(chat_id))
+            .order_by(func.length(Customfilters.KEYWORD).desc())
+            .order_by(Customfilters.Keyword.Asc())
             .all()
         )
     finally:
@@ -312,7 +312,7 @@ def num_filters():
 
 def num_chats():
     try:
-        return SESSION.query(func.count(distinct(CustomFilters.chat_id))).scalar()
+        return SESSION.query(func.count(distinct(Customfilters.CHAT_ID))).scalar()
     finally:
         SESSION.close()
 
@@ -320,7 +320,7 @@ def num_chats():
 def __load_chat_filters():
     global CHAT_FILTERS
     try:
-        chats = SESSION.query(CustomFilters.chat_id).distinct().all()
+        chats = SESSION.query(Customfilters.CHAT_ID).distinct().all()
         for (chat_id,) in chats:  # remove tuple by ( ,)
             CHAT_FILTERS[chat_id] = []
 
@@ -378,7 +378,7 @@ def migrate_chat(old_chat_id, new_chat_id):
     with CUST_FILT_LOCK:
         chat_filters = (
             SESSION.query(CustomFilters)
-            .filter(CustomFilters.chat_id == str(old_chat_id))
+            .filter(Customfilters.CHAT_ID == str(old_chat_id))
             .all()
         )
         for filt in chat_filters:

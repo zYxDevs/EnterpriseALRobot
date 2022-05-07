@@ -13,7 +13,7 @@ from tg_bot import (
     SARDEGNA_USERS,
     WHITELIST_USERS,
     sw,
-    dispatcher,
+    application,
     log,
 )
 from tg_bot.modules.helper_funcs.chat_status import (
@@ -26,7 +26,14 @@ from telegram import ParseMode, Update
 from telegram.error import BadRequest, TelegramError
 from telegram.ext import CallbackContext, Filters
 from telegram.utils.helpers import mention_html
-from spamwatch.errors import SpamWatchError, Error, UnauthorizedError, NotFoundError, Forbidden, TooManyRequests
+from spamwatch.errors import (
+    SpamWatchError,
+    Error,
+    UnauthorizedError,
+    NotFoundError,
+    Forbidden,
+    TooManyRequests,
+)
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
@@ -64,7 +71,7 @@ UNGBAN_ERRORS = {
 
 @kigcmd(command="gban")
 @support_plus
-def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
+async def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
     bot, args = context.bot, context.args
     message = update.effective_message
     user = update.effective_user
@@ -74,61 +81,61 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
     user_id, reason = extract_user_and_text(message, args)
 
     if not user_id:
-        message.reply_text(
+        await message.reply_text(
             "You don't seem to be referring to a user or the ID specified is incorrect.."
         )
         return
 
     if int(user_id) in DEV_USERS:
-        message.reply_text(
+        await message.reply_text(
             "That user is part of the Union\nI can't act against our own."
         )
         return
 
     if int(user_id) in SUDO_USERS:
-        message.reply_text(
+        await message.reply_text(
             "I spy, with my little eye... a nation! Why are you guys turning on each other?"
         )
         return
 
     if int(user_id) in SUPPORT_USERS:
-        message.reply_text(
+        await message.reply_text(
             "OOOH someone's trying to gban a Sakura Nation! *grabs popcorn*"
         )
         return
 
     if int(user_id) in SARDEGNA_USERS:
-        message.reply_text("That's a Sardegna! They cannot be banned!")
+        await message.reply_text("That's a Sardegna! They cannot be banned!")
         return
 
     if int(user_id) in WHITELIST_USERS:
-        message.reply_text("That's a Neptunia! They cannot be banned!")
+        await message.reply_text("That's a Neptunia! They cannot be banned!")
         return
 
     if int(user_id) in (777000, 1087968824):
-        message.reply_text("Huh, why would I gban Telegram bots?")
+        await message.reply_text("Huh, why would I gban Telegram bots?")
         return
 
     if user_id == bot.id:
-        message.reply_text("You uhh...want me to kill myself?")
+        await message.reply_text("You uhh...want me to kill myself?")
         return
 
     try:
-        user_chat = bot.get_chat(user_id)
+        user_chat = await bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message != "User not found":
             return
 
-        message.reply_text("I can't seem to find this user.")
+        await message.reply_text("I can't seem to find this user.")
         return ""
     if user_chat.type != "private":
-        message.reply_text("That's not a user!")
+        await message.reply_text("That's not a user!")
         return
 
     if sql.is_user_gbanned(user_id):
 
         if not reason:
-            message.reply_text(
+            await message.reply_text(
                 "This user is already gbanned; I'd change the reason, but you haven't given me one..."
             )
             return
@@ -137,7 +144,7 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
             user_id, user_chat.username or user_chat.first_name, reason
         )
         if old_reason:
-            message.reply_text(
+            await message.reply_text(
                 "This user is already gbanned, for the following reason:\n"
                 "<code>{}</code>\n"
                 "I've gone and updated it with your new reason!".format(
@@ -147,13 +154,13 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
             )
 
         else:
-            message.reply_text(
+            await message.reply_text(
                 "This user is already gbanned, but had no reason set; I've gone and updated it!"
             )
 
         return
 
-    message.reply_text("On it!")
+    await message.reply_text("On it!")
 
     start_time = time.time()
     datetime_fmt = "%Y-%m-%dT%H:%M"
@@ -181,9 +188,11 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if GBAN_LOGS:
         try:
-            log = bot.send_message(GBAN_LOGS, log_message, parse_mode=ParseMode.HTML)
+            log = await bot.send_message(
+                GBAN_LOGS, log_message, parse_mode=ParseMode.HTML
+            )
         except BadRequest as excp:
-            log = bot.send_message(
+            log = await bot.send_message(
                 GBAN_LOGS,
                 log_message
                 + "\n\nFormatting has been disabled due to an unexpected error.",
@@ -205,14 +214,14 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
             continue
 
         try:
-            bot.kick_chat_member(chat_id, user_id)
+            await bot.ban_chat_member(chat_id, user_id)
             gbanned_chats += 1
 
         except BadRequest as excp:
             if excp.message not in GBAN_ERRORS:
-                message.reply_text(f"Could not gban due to: {excp.message}")
+                await message.reply_text(f"Could not gban due to: {excp.message}")
                 if GBAN_LOGS:
-                    bot.send_message(
+                    await bot.send_message(
                         GBAN_LOGS,
                         f"Could not gban due to {excp.message}",
                         parse_mode=ParseMode.HTML,
@@ -246,9 +255,9 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if gban_time > 60:
         gban_time = round((gban_time / 60), 2)
-    message.reply_text("Done! Gbanned.", parse_mode=ParseMode.HTML)
+    await message.reply_text("Done! Gbanned.", parse_mode=ParseMode.HTML)
     try:
-        bot.send_message(
+        await bot.send_message(
             user_id,
             "#GBAN"
             "You have been marked as Malicious and as such have been banned from any future groups we manage."
@@ -262,7 +271,7 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
 @kigcmd(command="ungban")
 @support_plus
-def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
+async def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
     bot, args = context.bot, context.args
     message = update.effective_message
     user = update.effective_user
@@ -272,21 +281,23 @@ def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
     user_id = extract_user(message, args)
 
     if not user_id:
-        message.reply_text(
+        await message.reply_text(
             "You don't seem to be referring to a user or the ID specified is incorrect.."
         )
         return
 
-    user_chat = bot.get_chat(user_id)
+    user_chat = await bot.get_chat(user_id)
     if user_chat.type != "private":
-        message.reply_text("That's not a user!")
+        await message.reply_text("That's not a user!")
         return
 
     if not sql.is_user_gbanned(user_id):
-        message.reply_text("This user is not gbanned!")
+        await message.reply_text("This user is not gbanned!")
         return
 
-    message.reply_text(f"I'll give {user_chat.first_name} a second chance, globally.")
+    await message.reply_text(
+        f"I'll give {user_chat.first_name} a second chance, globally."
+    )
 
     start_time = time.time()
     datetime_fmt = "%Y-%m-%dT%H:%M"
@@ -308,9 +319,11 @@ def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if GBAN_LOGS:
         try:
-            log = bot.send_message(GBAN_LOGS, log_message, parse_mode=ParseMode.HTML)
+            log = await bot.send_message(
+                GBAN_LOGS, log_message, parse_mode=ParseMode.HTML
+            )
         except BadRequest as excp:
-            log = bot.send_message(
+            log = await bot.send_message(
                 GBAN_LOGS,
                 log_message
                 + "\n\nFormatting has been disabled due to an unexpected error.",
@@ -329,22 +342,22 @@ def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
             continue
 
         try:
-            member = bot.get_chat_member(chat_id, user_id)
+            member = await bot.get_chat_member(chat_id, user_id)
             if member.status == "kicked":
-                bot.unban_chat_member(chat_id, user_id)
+                await bot.unban_chat_member(chat_id, user_id)
                 ungbanned_chats += 1
 
         except BadRequest as excp:
             if excp.message not in UNGBAN_ERRORS:
-                message.reply_text(f"Could not un-gban due to: {excp.message}")
+                await message.reply_text(f"Could not un-gban due to: {excp.message}")
                 if GBAN_LOGS:
-                    bot.send_message(
+                    await bot.send_message(
                         GBAN_LOGS,
                         f"Could not un-gban due to: {excp.message}",
                         parse_mode=ParseMode.HTML,
                     )
                 else:
-                    bot.send_message(
+                    await bot.send_message(
                         OWNER_ID, f"Could not un-gban due to: {excp.message}"
                     )
                 return
@@ -366,18 +379,18 @@ def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if ungban_time > 60:
         ungban_time = round((ungban_time / 60), 2)
-        message.reply_text(f"Person has been un-gbanned. Took {ungban_time} min")
+        await message.reply_text(f"Person has been un-gbanned. Took {ungban_time} min")
     else:
-        message.reply_text(f"Person has been un-gbanned. Took {ungban_time} sec")
+        await message.reply_text(f"Person has been un-gbanned. Took {ungban_time} sec")
 
 
 @kigcmd(command="gbanlist")
 @support_plus
-def gbanlist(update: Update, context: CallbackContext):
+async def gbanlist(update: Update, context: CallbackContext):
     banned_users = sql.get_gban_list()
 
     if not banned_users:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             "There aren't any gbanned users! You're kinder than I expected..."
         )
         return
@@ -390,7 +403,7 @@ def gbanlist(update: Update, context: CallbackContext):
 
     with BytesIO(str.encode(banfile)) as output:
         output.name = "gbanlist.txt"
-        update.effective_message.reply_document(
+        await update.effective_message.reply_document(
             document=output,
             filename="gbanlist.txt",
             caption="Here is the list of currently gbanned users.",
@@ -403,21 +416,28 @@ def check_and_ban(update, user_id, should_message=True):
         sw_ban = sw.get_ban(int(user_id))
     except AttributeError:
         sw_ban = None
-    except (SpamWatchError, Error, UnauthorizedError, NotFoundError, Forbidden, TooManyRequests) as e:
+    except (
+        SpamWatchError,
+        Error,
+        UnauthorizedError,
+        NotFoundError,
+        Forbidden,
+        TooManyRequests,
+    ) as e:
         log.warning(f" SpamWatch Error: {e}")
         sw_ban = None
 
     if sw_ban:
         chat.ban_member(user_id)
         if should_message:
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 f"This person has been detected as a spammer by @SpamWatch and has been removed!\nReason: <code>{sw_ban.reason}</code>",
                 parse_mode=ParseMode.HTML,
             )
         return
 
     if sql.is_user_gbanned(user_id):
-        update.effective_chat.ban_member(user_id)
+        await update.effective_chat.ban_member(user_id)
         if should_message:
             text = (
                 f"<b>Alert</b>: this user is globally banned.\n"
@@ -428,16 +448,18 @@ def check_and_ban(update, user_id, should_message=True):
             user = sql.get_gbanned_user(user_id)
             if user.reason:
                 text += f"\n<b>Ban Reason:</b> <code>{html.escape(user.reason)}</code>"
-            update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
+            await update.effective_message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-@kigmsg((Filters.all & Filters.chat_type.groups), can_disable=False, group=GBAN_ENFORCE_GROUP)
-def enforce_gban(update: Update, context: CallbackContext):
+@kigmsg(
+    (filters.ALL & filters.ChatType.GROUPS), can_disable=False, group=GBAN_ENFORCE_GROUP
+)
+async def enforce_gban(update: Update, context: CallbackContext):
     # Not using @restrict handler to avoid spamming - just ignore if cant gban.
     bot = context.bot
     if (
-            sql.does_chat_gban(update.effective_chat.id)
-            and update.effective_chat.get_member(bot.id).can_restrict_members
+        sql.does_chat_gban(update.effective_chat.id)
+        and await update.effective_chat.get_member(bot.id).can_restrict_members
     ):
         user = update.effective_user
         chat = update.effective_chat
@@ -460,24 +482,24 @@ def enforce_gban(update: Update, context: CallbackContext):
 
 @kigcmd(command="antispam")
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
-def gbanstat(update: Update, context: CallbackContext):
+async def gbanstat(update: Update, context: CallbackContext):
     args = context.args
     if len(args) > 0:
         if args[0].lower() in ["on", "yes"]:
             sql.enable_gbans(update.effective_chat.id)
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 "I've enabled gbans in this group. This will help protect you "
                 "from spammers, unsavoury characters, and the biggest trolls."
             )
         elif args[0].lower() in ["off", "no"]:
             sql.disable_gbans(update.effective_chat.id)
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 "I've disabled gbans in this group. GBans wont affect your users "
                 "anymore. You'll be less protected from any trolls and spammers "
                 "though!"
             )
     else:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             "Give me some arguments to choose a setting! on/off, yes/no!\n\n"
             "Your current setting is: {}\n"
             "When True, any gbans that happen will also happen in your group. "
@@ -498,7 +520,7 @@ def __user_info__(user_id):
     text = "Gbanned: <b>{}</b>"
     if user_id in [777000, 1087968824]:
         return ""
-    if user_id == dispatcher.bot.id:
+    if user_id == application.bot.id:
         return ""
     if int(user_id) in SUDO_USERS + SARDEGNA_USERS + WHITELIST_USERS:
         return ""
@@ -507,7 +529,7 @@ def __user_info__(user_id):
         user = sql.get_gbanned_user(user_id)
         if user.reason:
             text += f"\n<b>Reason:</b> <code>{html.escape(user.reason)}</code>"
-        text += '\n<b>Appeal Chat:</b> @YorkTownEagleUnion'
+        text += "\n<b>Appeal Chat:</b> @YorkTownEagleUnion"
     else:
         text = text.format("No")
     return text
@@ -528,4 +550,4 @@ def get_help(chat):
     return gs(chat, "antispam_help")
 
 
-__mod_name__ = 'AntiSpam'
+__mod_name__ = "AntiSpam"

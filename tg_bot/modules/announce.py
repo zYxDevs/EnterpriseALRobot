@@ -14,7 +14,7 @@ from ..modules.helper_funcs.anonymous import user_admin as u_admin, AdminPerms
 @kigcmd(command="announce", pass_args=True)
 @u_admin(AdminPerms.CAN_CHANGE_INFO)
 @loggable
-def announcestat(update: Update, context: CallbackContext) -> str:
+async def announcestat(update: Update, context: CallbackContext) -> str:
     args = context.args
     if len(args) > 0:
         u = update.effective_user
@@ -23,7 +23,7 @@ def announcestat(update: Update, context: CallbackContext) -> str:
         user = update.effective_user
         if args[0].lower() in ["on", "yes", "true"]:
             sql.enable_chat_log(update.effective_chat.id)
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 "I've enabled announcemets in this group. Now any admin actions in your group will be announced."
             )
             logmsg = (
@@ -35,7 +35,7 @@ def announcestat(update: Update, context: CallbackContext) -> str:
             return logmsg
         elif args[0].lower() in ["off", "no", "false"]:
             sql.disable_chat_log(update.effective_chat.id)
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 "I've disabled announcemets in this group. Now admin actions in your group will not be announced."
             )
             logmsg = (
@@ -46,14 +46,15 @@ def announcestat(update: Update, context: CallbackContext) -> str:
             )
             return logmsg
     else:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             "Give me some arguments to choose a setting! on/off, yes/no!\n\n"
             "Your current setting is: {}\n"
             "When True, any admin actions in your group will be announced."
             "When False, admin actions in your group will not be announced.".format(
-                sql.does_chat_log(update.effective_chat.id))
+                sql.does_chat_log(update.effective_chat.id)
+            )
         )
-        return ''
+        return ""
 
 
 def __migrate__(old_chat_id, new_chat_id):

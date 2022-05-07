@@ -3,7 +3,7 @@ from io import BytesIO
 from time import sleep
 
 import tg_bot.modules.sql.users_sql as sql
-from tg_bot import DEV_USERS, log, OWNER_ID, dispatcher
+from tg_bot import DEV_USERS, log, OWNER_ID, application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus, sudo_plus
 from tg_bot.modules.sql.users_sql import get_all_users
 from telegram import TelegramError, Update
@@ -34,7 +34,7 @@ def get_user_id(username):
     else:
         for user_obj in users:
             try:
-                userdat = dispatcher.bot.get_chat(user_obj.user_id)
+                userdat = await application.bot.get_chat(user_obj.user_id)
                 if userdat.username == username:
                     return userdat.id
 
@@ -46,8 +46,8 @@ def get_user_id(username):
 
 
 @dev_plus
-def broadcast(update: Update, context: CallbackContext):
-    to_send = update.effective_message.text.split(None, 1)
+async def broadcast(update: Update, context: CallbackContext):
+    to_send = await update.effective_message.text.split(None, 1)
 
     if len(to_send) >= 2:
         to_group = False
@@ -65,7 +65,7 @@ def broadcast(update: Update, context: CallbackContext):
         if to_group:
             for chat in chats:
                 try:
-                    context.bot.sendMessage(
+                    await context.bot.sendMessage(
                         int(chat.chat_id),
                         to_send[1],
                         parse_mode="MARKDOWN",
@@ -77,7 +77,7 @@ def broadcast(update: Update, context: CallbackContext):
         if to_user:
             for user in users:
                 try:
-                    context.bot.sendMessage(
+                    await context.bot.sendMessage(
                         int(user.user_id),
                         to_send[1],
                         parse_mode="MARKDOWN",
@@ -86,12 +86,12 @@ def broadcast(update: Update, context: CallbackContext):
                     sleep(0.1)
                 except TelegramError:
                     failed_user += 1
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             f"Broadcast complete.\nGroups failed: {failed}.\nUsers failed: {failed_user}."
         )
 
 
-def log_user(update: Update, _: CallbackContext):
+async def log_user(update: Update, _: CallbackContext):
     chat = update.effective_chat
     msg = update.effective_message
 
@@ -133,7 +133,9 @@ def log_user(update: Update, _: CallbackContext):
                 with contextlib.suppress(AttributeError):
                     sql.update_user(entity.user.id, entity.user.username)
     if msg.sender_chat and not msg.is_automatic_forward:
-        sql.update_user(msg.sender_chat.id, msg.sender_chat.username, chat.id, chat.title)
+        sql.update_user(
+            msg.sender_chat.id, msg.sender_chat.username, chat.id, chat.title
+        )
 
     if msg.new_chat_members:
         for user in msg.new_chat_members:
@@ -143,13 +145,13 @@ def log_user(update: Update, _: CallbackContext):
 
 
 @sudo_plus
-def chats(update: Update, context: CallbackContext):
+async def chats(update: Update, context: CallbackContext):
     all_chats = sql.get_all_chats() or []
     chatfile = "List of chats.\n0. Chat name | Chat ID | Members count\n"
     P = 1
     for chat in all_chats:
         try:
-            curr_chat = context.bot.getChat(chat.chat_id)
+            curr_chat = await context.bot.getChat(chat.chat_id)
             bot_member = curr_chat.get_member(context.bot.id)
             chat_members = curr_chat.get_member_count(context.bot.id)
             chatfile += "{}. {} | {} | {}\n".format(
@@ -161,23 +163,26 @@ def chats(update: Update, context: CallbackContext):
 
     with BytesIO(str.encode(chatfile)) as output:
         output.name = "glist.txt"
-        update.effective_message.reply_document(
+        await update.effective_message.reply_document(
             document=output,
             filename="glist.txt",
             caption="Here be the list of groups in my database.",
         )
 
 
-def chat_checker(update: Update, context: CallbackContext):
+async def chat_checker(update: Update, context: CallbackContext):
     bot = context.bot
-    if update.effective_message.chat.get_member(bot.id).can_send_messages is False:
-        bot.leaveChat(update.effective_message.chat.id)
+    if (
+        await update.effective_message.chat.get_member(bot.id).can_send_messages
+        is False
+    ):
+        await bot.leaveChat(update.effective_message.chat.id)
 
 
 def __user_info__(user_id):
     if user_id in [777000, 1087968824]:
         return """Groups count: <code>N/A</code>"""
-    if user_id == dispatcher.bot.id:
+    if user_id == application.bot.id:
         return """Groups count: <code>N/A</code>"""
     num_chats = sql.get_user_num_chats(user_id)
     return f"""Groups count: <code>{num_chats}</code>"""
@@ -194,20 +199,20 @@ def __migrate__(old_chat_id, new_chat_id):
 __help__ = ""  # no help string
 
 BROADCAST_HANDLER = CommandHandler(
-    ["broadcastall", "broadcastusers", "broadcastgroups"], broadcast, run_async=True
+    ["broadcastall", "broadcastusers", "broadcastgroups"], broadcast, block=False
 )
 USER_HANDLER = MessageHandler(
-    Filters.all & Filters.chat_type.groups, log_user, run_async=True
+    filters.ALL & filters.ChatType.GROUPS, log_user, block=False
 )
 CHAT_CHECKER_HANDLER = MessageHandler(
-    Filters.all & Filters.chat_type.groups, chat_checker, run_async=True
+    filters.ALL & filters.ChatType.GROUPS, chat_checker, block=False
 )
-# CHATLIST_HANDLER = CommandHandler("chatlist", chats, run_async=True)
+# CHATLIST_HANDLER = CommandHandler("chatlist", chats, block=False)
 
-dispatcher.add_handler(USER_HANDLER, USERS_GROUP)
-dispatcher.add_handler(BROADCAST_HANDLER)
-# dispatcher.add_handler(CHATLIST_HANDLER)
-dispatcher.add_handler(CHAT_CHECKER_HANDLER, CHAT_GROUP)
+application.add_handler(USER_HANDLER, USERS_GROUP)
+application.add_handler(BROADCAST_HANDLER)
+# application.add_handler(CHATLIST_HANDLER)
+application.add_handler(CHAT_CHECKER_HANDLER, CHAT_GROUP)
 
 __mod_name__ = "Users"
 __handlers__ = [(USER_HANDLER, USERS_GROUP), BROADCAST_HANDLER]

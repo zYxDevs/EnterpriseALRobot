@@ -23,3 +23,4 @@ config.ini
 shell_output.txt
 .vs
 tg_bot/elevated_users.json
+owo.py

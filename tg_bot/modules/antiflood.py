@@ -11,7 +11,7 @@ from telegram import (
     ChatPermissions,
 )
 
-from tg_bot import SARDEGNA_USERS, WHITELIST_USERS, dispatcher
+from tg_bot import SARDEGNA_USERS, WHITELIST_USERS, application
 from tg_bot.modules.sql.approve_sql import is_approved
 from tg_bot.modules.helper_funcs.chat_status import (
     bot_admin,
@@ -28,7 +28,7 @@ from telegram.ext import (
     CallbackContext,
 )
 from telegram.utils.helpers import mention_html, escape_markdown
-from tg_bot import dispatcher
+from tg_bot import application
 from tg_bot.modules.helper_funcs.string_handling import extract_time
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.sql import antiflood_sql as sql
@@ -41,10 +41,12 @@ from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 FLOOD_GROUP = -5
 
 
-@kigmsg((Filters.all & ~Filters.status_update & Filters.chat_type.groups), group=FLOOD_GROUP)
+@kigmsg(
+    (filters.ALL & ~filters.STATUS_UPDATE & filters.ChatType.GROUPS), group=FLOOD_GROUP
+)
 @connection_status
 @loggable
-def check_flood(update, context) -> Optional[str]:
+async def check_flood(update, context) -> Optional[str]:
     global execstrings
     user = update.effective_user  # type: Optional[User]
     chat = update.effective_chat  # type: Optional[Chat]
@@ -54,9 +56,9 @@ def check_flood(update, context) -> Optional[str]:
 
     # ignore admins and whitelists
     if (
-            is_user_admin(update, user.id)
-            or user.id in WHITELIST_USERS
-            or user.id in SARDEGNA_USERS
+        is_user_admin(update, user.id)
+        or user.id in WHITELIST_USERS
+        or user.id in SARDEGNA_USERS
     ):
         sql.update_flood(chat.id, None)
         return ""
@@ -81,7 +83,7 @@ def check_flood(update, context) -> Optional[str]:
             execstrings = "Kicked"
             tag = "KICKED"
         elif getmode == 3:
-            context.bot.restrict_chat_member(
+            await context.bot.restrict_chat_member(
                 chat.id, user.id, permissions=ChatPermissions(can_send_messages=False)
             )
             execstrings = "Muted"
@@ -93,7 +95,7 @@ def check_flood(update, context) -> Optional[str]:
             tag = "TBAN"
         elif getmode == 5:
             mutetime = extract_time(msg, getvalue)
-            context.bot.restrict_chat_member(
+            await context.bot.restrict_chat_member(
                 chat.id,
                 user.id,
                 until_date=mutetime,
@@ -131,7 +133,7 @@ def check_flood(update, context) -> Optional[str]:
 @user_admin_no_reply
 @bot_admin
 @kigcallback(pattern=r"unmute_flooder")
-def flood_button(update: Update, context: CallbackContext):
+async def flood_button(update: Update, context: CallbackContext):
     bot = context.bot
     query = update.callback_query
     user = update.effective_user
@@ -140,7 +142,7 @@ def flood_button(update: Update, context: CallbackContext):
         user_id = match.group(1)
         chat = update.effective_chat.id
         try:
-            bot.restrict_chat_member(
+            await bot.restrict_chat_member(
                 chat,
                 int(user_id),
                 permissions=ChatPermissions(
@@ -150,7 +152,7 @@ def flood_button(update: Update, context: CallbackContext):
                     can_add_web_page_previews=True,
                 ),
             )
-            update.effective_message.edit_text(
+            await update.effective_message.edit_text(
                 f"Unmuted by {mention_html(user.id, user.first_name)}.",
                 parse_mode="HTML",
             )
@@ -158,12 +160,12 @@ def flood_button(update: Update, context: CallbackContext):
             pass
 
 
-@kigcmd(command='setflood', pass_args=True, filters=Filters.chat_type.groups)
+@kigcmd(command="setflood", pass_args=True, filters=filters.ChatType.GROUPS)
 @connection_status
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @can_restrict
 @loggable
-def set_flood(update, context) -> str:  # sourcery no-metrics
+async def set_flood(update, context) -> str:  # sourcery no-metrics
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
@@ -172,7 +174,7 @@ def set_flood(update, context) -> str:  # sourcery no-metrics
     conn = connected(context.bot, update, chat, user.id, need_admin=True)
     if conn:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         if update.effective_message.chat.type == "private":
             send_message(
@@ -188,22 +190,22 @@ def set_flood(update, context) -> str:  # sourcery no-metrics
         if val in ["off", "no", "0"]:
             sql.set_flood(chat_id, 0)
             if conn:
-                text = message.reply_text(
+                text = await message.reply_text(
                     "Antiflood has been disabled in {}.".format(chat_name)
                 )
             else:
-                text = message.reply_text("Antiflood has been disabled.")
+                text = await message.reply_text("Antiflood has been disabled.")
 
         elif val.isdigit():
             amount = int(val)
             if amount <= 0:
                 sql.set_flood(chat_id, 0)
                 if conn:
-                    text = message.reply_text(
+                    text = await message.reply_text(
                         "Antiflood has been disabled in {}.".format(chat_name)
                     )
                 else:
-                    text = message.reply_text("Antiflood has been disabled.")
+                    text = await message.reply_text("Antiflood has been disabled.")
                 return (
                     "<b>{}:</b>"
                     "\n#SETFLOOD"
@@ -223,13 +225,13 @@ def set_flood(update, context) -> str:  # sourcery no-metrics
             else:
                 sql.set_flood(chat_id, amount)
                 if conn:
-                    text = message.reply_text(
+                    text = await message.reply_text(
                         "Anti-flood has been set to {} in chat: {}".format(
                             amount, chat_name
                         )
                     )
                 else:
-                    text = message.reply_text(
+                    text = await message.reply_text(
                         "Successfully updated anti-flood limit to {}!".format(amount)
                     )
                 return (
@@ -244,9 +246,11 @@ def set_flood(update, context) -> str:  # sourcery no-metrics
                 )
 
         else:
-            message.reply_text("Invalid argument please use a number, 'off' or 'no'")
+            await message.reply_text(
+                "Invalid argument please use a number, 'off' or 'no'"
+            )
     else:
-        message.reply_text(
+        await message.reply_text(
             (
                 "Use `/setflood number` to enable anti-flood.\nOr use `/setflood off` to disable antiflood!."
             ),
@@ -255,9 +259,9 @@ def set_flood(update, context) -> str:  # sourcery no-metrics
     return ""
 
 
-@kigcmd(command="flood", filters=Filters.chat_type.groups)
+@kigcmd(command="flood", filters=filters.ChatType.GROUPS)
 @connection_status
-def flood(update, context):
+async def flood(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message
@@ -265,7 +269,7 @@ def flood(update, context):
     conn = connected(context.bot, update, chat, user.id, need_admin=False)
     if conn:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         if update.effective_message.chat.type == "private":
             send_message(
@@ -298,9 +302,9 @@ def flood(update, context):
         )
 
 
-@kigcmd(command="setfloodmode", pass_args=True, filters=Filters.chat_type.groups)
+@kigcmd(command="setfloodmode", pass_args=True, filters=filters.ChatType.GROUPS)
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
-def set_flood_mode(update, context):  # sourcery no-metrics
+async def set_flood_mode(update, context):  # sourcery no-metrics
     global settypeflood
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -309,9 +313,9 @@ def set_flood_mode(update, context):  # sourcery no-metrics
 
     conn = connected(context.bot, update, chat, user.id, need_admin=True)
     if conn:
-        chat = dispatcher.bot.getChat(conn)
+        chat = await application.bot.getChat(conn)
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         if update.effective_message.chat.type == "private":
             send_message(

@@ -11,7 +11,7 @@ def id_from_reply(message):
     if not prev_message:
         return None, None
     user_id = prev_message.from_user.id
-    res = message.text.split(None, 1)
+    res = await message.text.split(None, 1)
     if prev_message.sender_chat:
         user_id = prev_message.sender_chat.id
     if len(res) < 2:
@@ -27,7 +27,7 @@ def extract_user_and_text(
     message: Message, args: List[str]
 ) -> Tuple[Optional[int], Optional[str]]:
     prev_message = message.reply_to_message
-    split_text = message.text.split(None, 1)
+    split_text = await message.text.split(None, 1)
 
     if len(split_text) < 2:
         return id_from_reply(message)  # only option possible
@@ -48,7 +48,7 @@ def extract_user_and_text(
         user = args[0]
         user_id = get_user_id(user)
         if not user_id:
-            message.reply_text(
+            await message.reply_text(
                 "No idea who this user is. You'll be able to interact with them if "
                 "you reply to that person's message instead, or forward one of that user's messages."
             )
@@ -56,13 +56,13 @@ def extract_user_and_text(
 
         else:
             user_id = user_id
-            res = message.text.split(None, 2)
+            res = await message.text.split(None, 2)
             if len(res) >= 3:
                 text = res[2]
 
     elif len(args) >= 1 and args[0].lstrip("-").isdigit():
         user_id = int(args[0])
-        res = message.text.split(None, 2)
+        res = await message.text.split(None, 2)
         if len(res) >= 3:
             text = res[2]
 
@@ -73,10 +73,10 @@ def extract_user_and_text(
         return None, None
 
     try:
-        message.bot.get_chat(user_id)
+        await message.bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found"):
-            message.reply_text(
+            await message.reply_text(
                 "I don't seem to have interacted with this user before - please forward a message from "
                 "them to give me control! (like a voodoo doll, I need a piece of them to be able "
                 "to execute certain commands...)"
@@ -101,7 +101,7 @@ def extract_unt_fedban(
     message: Message, args: List[str]
 ) -> Tuple[Optional[int], Optional[str]]:  # sourcery no-metrics
     prev_message = message.reply_to_message
-    split_text = message.text.split(None, 1)
+    split_text = await message.text.split(None, 1)
 
     if len(split_text) < 2:
         return id_from_reply(message)  # only option possible
@@ -122,7 +122,7 @@ def extract_unt_fedban(
         user = args[0]
         user_id = get_user_id(user)
         if not user_id and not isinstance(user_id, int):
-            message.reply_text(
+            await message.reply_text(
                 "I don't have users on my DB.You will be able to interact with them if "
                 "you reply to the person's message, or forward one of the user's message"
             )
@@ -130,13 +130,13 @@ def extract_unt_fedban(
 
         else:
             user_id = user_id
-            res = message.text.split(None, 2)
+            res = await message.text.split(None, 2)
             if len(res) >= 3:
                 text = res[2]
 
     elif len(args) >= 1 and args[0].isdigit():
         user_id = int(args[0])
-        res = message.text.split(None, 2)
+        res = await message.text.split(None, 2)
         if len(res) >= 3:
             text = res[2]
 
@@ -147,12 +147,12 @@ def extract_unt_fedban(
         return None, None
 
     try:
-        message.bot.get_chat(user_id)
+        await message.bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found") and not isinstance(
             user_id, int
         ):
-            message.reply_text(
+            await message.reply_text(
                 "I seem to have never interacted with this user "
                 "Previously - please forward a message from them to give me control! "
                 "(Like a voodoo doll, I need a piece to be able to "

@@ -9,8 +9,9 @@ from tg_bot import LASTFM_API_KEY
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 import tg_bot.modules.sql.last_fm_sql as sql
 
-@kigcmd(command='setuser')
-def set_user(update: Update, context: CallbackContext):
+
+@kigcmd(command="setuser")
+async def set_user(update: Update, context: CallbackContext):
     args = context.args
     msg = update.effective_message
     if args:
@@ -23,16 +24,18 @@ def set_user(update: Update, context: CallbackContext):
             "That's not how this works...\nRun /setuser followed by your username!"
         )
 
-@kigcmd(command='clearuser')
-def clear_user(update: Update, _):
+
+@kigcmd(command="clearuser")
+async def clear_user(update: Update, _):
     user = update.effective_user.id
     sql.set_user(user, "")
-    update.effective_message.reply_text(
+    await update.effective_message.reply_text(
         "Last.fm username successfully cleared from my database!"
     )
 
-@kigcmd(command='lastfm')
-def last_fm(update: Update, _):
+
+@kigcmd(command="lastfm")
+async def last_fm(update: Update, _):
     msg = update.effective_message
     user = update.effective_user.first_name
     user_id = update.effective_user.id

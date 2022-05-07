@@ -3,7 +3,13 @@ from html import escape
 from typing import Optional
 
 import telegram
-from telegram import Chat, ParseMode, InlineKeyboardMarkup, Message, InlineKeyboardButton
+from telegram import (
+    Chat,
+    ParseMode,
+    InlineKeyboardMarkup,
+    Message,
+    InlineKeyboardButton,
+)
 from telegram.error import BadRequest
 from telegram.ext import (
     DispatcherHandlerStop,
@@ -11,7 +17,7 @@ from telegram.ext import (
 )
 from telegram.utils.helpers import mention_html, escape_markdown
 
-from tg_bot import dispatcher, log, SUDO_USERS
+from tg_bot import application, log, SUDO_USERS
 from tg_bot.modules.helper_funcs.extraction import extract_text
 from tg_bot.modules.helper_funcs.filters import CustomFilters
 from tg_bot.modules.helper_funcs.misc import build_keyboard_parser
@@ -34,28 +40,28 @@ from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 HANDLER_GROUP = 10
 
 ENUM_FUNC_MAP = {
-    sql.Types.TEXT.value: dispatcher.bot.send_message,
-    sql.Types.BUTTON_TEXT.value: dispatcher.bot.send_message,
-    sql.Types.STICKER.value: dispatcher.bot.send_sticker,
-    sql.Types.DOCUMENT.value: dispatcher.bot.send_document,
-    sql.Types.PHOTO.value: dispatcher.bot.send_photo,
-    sql.Types.AUDIO.value: dispatcher.bot.send_audio,
-    sql.Types.VOICE.value: dispatcher.bot.send_voice,
-    sql.Types.VIDEO.value: dispatcher.bot.send_video,
-    # sql.Types.VIDEO_NOTE.value: dispatcher.bot.send_video_note
+    sql.Types.TEXT.value: application.bot.send_message,
+    sql.Types.BUTTON_TEXT.value: application.bot.send_message,
+    sql.Types.STICKER.value: application.bot.send_sticker,
+    sql.Types.DOCUMENT.value: application.bot.send_document,
+    sql.Types.PHOTO.value: application.bot.send_photo,
+    sql.Types.AUDIO.value: application.bot.send_audio,
+    sql.Types.VOICE.value: application.bot.send_voice,
+    sql.Types.VIDEO.value: application.bot.send_video,
+    # sql.Types.VIDEO_NOTE.value: application.bot.send_video_note
 }
 
 
 @typing_action
-@kigcmd(command='filters', admin_ok=True)
-def list_handlers(update, context):
+@kigcmd(command="filters", admin_ok=True)
+async def list_handlers(update, context):
     chat = update.effective_chat
     user = update.effective_user
 
     conn = connected(context.bot, update, chat, user.id, need_admin=False)
     if conn is not False:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
         filter_list = "*Filter in {}:*\n"
     else:
         chat_id = update.effective_chat.id
@@ -94,10 +100,10 @@ def list_handlers(update, context):
 
 
 # NOT ASYNC BECAUSE DISPATCHER HANDLER RAISED
-@kigcmd(command='filter', run_async=False)
+@kigcmd(command="filter", block=True)
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @typing_action
-def filters(update, context):  # sourcery no-metrics
+async def filters(update, context):  # sourcery no-metrics
     chat = update.effective_chat
     user = update.effective_user
     msg = update.effective_message
@@ -108,7 +114,7 @@ def filters(update, context):  # sourcery no-metrics
     conn = connected(context.bot, update, chat, user.id)
     if conn is not False:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
         chat_name = "local filters" if chat.type == "private" else chat.title
@@ -137,9 +143,9 @@ def filters(update, context):  # sourcery no-metrics
 
     # Add the filter
     # Note: perhaps handlers can be removed somehow using sql.get_chat_filters
-    for handler in dispatcher.handlers.get(HANDLER_GROUP, []):
+    for handler in application.handlers.get(HANDLER_GROUP, []):
         if handler.filters == (keyword, chat_id):
-            dispatcher.remove_handler(handler, HANDLER_GROUP)
+            application.remove_handler(handler, HANDLER_GROUP)
 
     text, file_type, file_id = get_filter_type(msg)
     if not msg.reply_to_message and len(extracted) >= 2:
@@ -218,18 +224,18 @@ def filters(update, context):  # sourcery no-metrics
 
 
 # NOT ASYNC BECAUSE DISPATCHER HANDLER RAISED
-@kigcmd(command='stop', run_async=False)
+@kigcmd(command="stop", block=True)
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @typing_action
-def stop_filter(update, context):
+async def stop_filter(update, context):
     chat = update.effective_chat
     user = update.effective_user
-    args = update.effective_message.text.split(None, 1)
+    args = await update.effective_message.text.split(None, 1)
 
     conn = connected(context.bot, update, chat, user.id)
     if conn is not False:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
         chat_name = "Local filters" if chat.type == "private" else chat.title
@@ -259,8 +265,8 @@ def stop_filter(update, context):
     )
 
 
-@kigmsg((CustomFilters.has_text & ~Filters.update.edited_message))
-def reply_filter(update, context):  # sourcery no-metrics
+@kigmsg((Customfilters.HAS_TEXT & ~filters.Update.EDITED_MESSAGE))
+async def reply_filter(update, context):  # sourcery no-metrics
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
 
@@ -328,7 +334,7 @@ def reply_filter(update, context):  # sourcery no-metrics
 
                 if filt.file_type in (sql.Types.BUTTON_TEXT, sql.Types.TEXT):
                     try:
-                        context.bot.send_message(
+                        await context.bot.send_message(
                             chat.id,
                             filtext,
                             reply_to_message_id=message.message_id,
@@ -340,7 +346,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                         error_catch = get_exception(excp, filt, chat)
                         if error_catch == "noreply":
                             try:
-                                context.bot.send_message(
+                                await context.bot.send_message(
                                     chat.id,
                                     filtext,
                                     parse_mode=ParseMode.HTML,
@@ -360,10 +366,8 @@ def reply_filter(update, context):  # sourcery no-metrics
                                     get_exception(excp, filt, chat),
                                 )
                             except BadRequest as excp:
-                                log.exception(
-                                    "Failed to send message: " + excp.message
-                                )
-                elif ENUM_FUNC_MAP[filt.file_type] == dispatcher.bot.send_sticker:
+                                log.exception("Failed to send message: " + excp.message)
+                elif ENUM_FUNC_MAP[filt.file_type] == application.bot.send_sticker:
                     ENUM_FUNC_MAP[filt.file_type](
                         chat.id,
                         filt.file_id,
@@ -380,17 +384,17 @@ def reply_filter(update, context):  # sourcery no-metrics
                         reply_markup=keyboard,
                     )
             elif filt.is_sticker:
-                message.reply_sticker(filt.reply)
+                await message.reply_sticker(filt.reply)
             elif filt.is_document:
-                message.reply_document(filt.reply)
+                await message.reply_document(filt.reply)
             elif filt.is_image:
-                message.reply_photo(filt.reply)
+                await message.reply_photo(filt.reply)
             elif filt.is_audio:
-                message.reply_audio(filt.reply)
+                await message.reply_audio(filt.reply)
             elif filt.is_voice:
-                message.reply_voice(filt.reply)
+                await message.reply_voice(filt.reply)
             elif filt.is_video:
-                message.reply_video(filt.reply)
+                await message.reply_video(filt.reply)
             elif filt.has_markdown:
                 buttons = sql.get_buttons(chat.id, filt.keyword)
                 keyb = build_keyboard_parser(context.bot, chat.id, buttons)
@@ -417,7 +421,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                             log.exception("Error in filters: " + excp.message)
                     elif excp.message == "Reply message not found":
                         try:
-                            context.bot.send_message(
+                            await context.bot.send_message(
                                 chat.id,
                                 filt.reply,
                                 parse_mode=ParseMode.MARKDOWN,
@@ -434,9 +438,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                             )
                         except BadRequest as excp:
                             log.exception("Error in filters: " + excp.message)
-                        log.warning(
-                            "Message %s could not be parsed", str(filt.reply)
-                        )
+                        log.warning("Message %s could not be parsed", str(filt.reply))
                         log.exception(
                             "Could not parse filter %s in chat %s",
                             str(filt.keyword),
@@ -444,7 +446,7 @@ def reply_filter(update, context):  # sourcery no-metrics
                         )
 
             else:
-                    # LEGACY - all new filters will have has_markdown set to True.
+                # LEGACY - all new filters will have has_markdown set to True.
                 try:
                     send_message(update.effective_message, filt.reply)
                 except BadRequest as excp:
@@ -452,13 +454,13 @@ def reply_filter(update, context):  # sourcery no-metrics
             break
 
 
-@kigcmd(command="removeallfilters", filters=Filters.chat_type.groups)
-def rmall_filters(update, _):
+@kigcmd(command="removeallfilters", filters=filters.ChatType.GROUPS)
+async def rmall_filters(update, _):
     chat = update.effective_chat
     user = update.effective_user
     member = chat.get_member(user.id)
     if member.status != "creator" and user.id not in SUDO_USERS:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             "Only the chat owner can clear all notes at once."
         )
     else:
@@ -472,7 +474,7 @@ def rmall_filters(update, _):
                 [InlineKeyboardButton(text="Cancel", callback_data="filters_cancel")],
             ]
         )
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             f"Are you sure you would like to stop ALL filters in {chat.title}? This action cannot be undone.",
             reply_markup=buttons,
             parse_mode=ParseMode.MARKDOWN,
@@ -480,7 +482,7 @@ def rmall_filters(update, _):
 
 
 @kigcallback(pattern=r"filters_.*")
-def rmall_callback(update, _):
+async def rmall_callback(update, _):
     query = update.callback_query
     chat = update.effective_chat
     msg = update.effective_message
@@ -504,18 +506,18 @@ def rmall_callback(update, _):
             msg.edit_text(f"Cleaned {count} filters in {chat.title}")
 
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            await query.answer("Only owner of the chat can do this.")
 
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            await query.answer("You need to be admin to do this.")
     elif query.data == "filters_cancel":
         if member.status == "creator" or query.from_user.id in SUDO_USERS:
             msg.edit_text("Clearing of all filters has been cancelled.")
             return
         if member.status == "administrator":
-            query.answer("Only owner of the chat can do this.")
+            await query.answer("Only owner of the chat can do this.")
         if member.status == "member":
-            query.answer("You need to be admin to do this.")
+            await query.answer("You need to be admin to do this.")
 
 
 # NOT ASYNC NOT A HANDLER
@@ -563,9 +565,12 @@ def __chat_settings__(chat_id, _):
     cust_filters = sql.get_chat_triggers(chat_id)
     return "There are `{}` custom filters here.".format(len(cust_filters))
 
+
 from tg_bot.modules.language import gs
+
 
 def get_help(chat):
     return gs(chat, "cust_filters_help")
+
 
 __mod_name__ = "Filters"

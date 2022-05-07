@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, UnicodeText, Integer, Boolean
 from sqlalchemy.sql.sqltypes import BigInteger
 from telegram.error import BadRequest, Unauthorized
 
-from tg_bot import dispatcher
+from tg_bot import application
 from tg_bot.modules.sql import SESSION, BASE
 
 
@@ -151,7 +151,9 @@ def get_user_fban(fed_id, user_id):
 def get_user_admin_fed_name(user_id):
     user_feds = []
     for f in FEDERATION_BYFEDID:
-        if int(user_id) in ast.literal_eval(ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["members"]):
+        if int(user_id) in ast.literal_eval(
+            ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["members"]
+        ):
             user_feds.append(FEDERATION_BYFEDID[f]["fname"])
     return user_feds
 
@@ -159,7 +161,9 @@ def get_user_admin_fed_name(user_id):
 def get_user_owner_fed_name(user_id):
     user_feds = []
     for f in FEDERATION_BYFEDID:
-        if int(user_id) == int(ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["owner"]):
+        if int(user_id) == int(
+            ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["owner"]
+        ):
             user_feds.append(FEDERATION_BYFEDID[f]["fname"])
     return user_feds
 
@@ -167,7 +171,9 @@ def get_user_owner_fed_name(user_id):
 def get_user_admin_fed_full(user_id):
     user_feds = []
     for f in FEDERATION_BYFEDID:
-        if int(user_id) in ast.literal_eval(ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["members"]):
+        if int(user_id) in ast.literal_eval(
+            ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["members"]
+        ):
             user_feds.append({"fed_id": f, "fed": FEDERATION_BYFEDID[f]})
     return user_feds
 
@@ -175,7 +181,9 @@ def get_user_admin_fed_full(user_id):
 def get_user_owner_fed_full(user_id):
     user_feds = []
     for f in FEDERATION_BYFEDID:
-        if int(user_id) == int(ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["owner"]):
+        if int(user_id) == int(
+            ast.literal_eval(FEDERATION_BYFEDID[f]["fusers"])["owner"]
+        ):
             user_feds.append({"fed_id": f, "fed": FEDERATION_BYFEDID[f]})
     return user_feds
 
@@ -681,7 +689,7 @@ def get_fed_log(fed_id):
         return False
     elif fed_setting.get("flog"):
         try:
-            dispatcher.bot.get_chat(fed_setting.get("flog"))
+            await application.bot.get_chat(fed_setting.get("flog"))
         except BadRequest:
             set_fed_log(fed_id, None)
             return False

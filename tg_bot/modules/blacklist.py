@@ -6,8 +6,11 @@ from telegram.ext import Filters
 from telegram.utils.helpers import mention_html
 from tg_bot.modules.sql.approve_sql import is_approved
 import tg_bot.modules.sql.blacklist_sql as sql
-from tg_bot import log, dispatcher
-from tg_bot.modules.helper_funcs.chat_status import user_admin as u_admin, user_not_admin
+from tg_bot import log, application
+from tg_bot.modules.helper_funcs.chat_status import (
+    user_admin as u_admin,
+    user_not_admin,
+)
 from tg_bot.modules.helper_funcs.extraction import extract_text
 from tg_bot.modules.helper_funcs.misc import split_message
 from tg_bot.modules.log_channel import loggable
@@ -21,10 +24,11 @@ from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
 BLACKLIST_GROUP = -3
 
+
 @kigcmd(command="blacklist", pass_args=True, admin_ok=True)
 @u_admin
 @typing_action
-def blacklist(update, context):
+async def blacklist(update, context):
     chat = update.effective_chat
     user = update.effective_user
     args = context.args
@@ -32,7 +36,7 @@ def blacklist(update, context):
     conn = connected(context.bot, update, chat, user.id, need_admin=False)
     if conn:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         if chat.type == "private":
             return
@@ -65,10 +69,11 @@ def blacklist(update, context):
             return
         send_message(update.effective_message, text, parse_mode=ParseMode.HTML)
 
+
 @kigcmd(command="addblacklist", pass_args=True)
 @user_admin(AdminPerms.CAN_DELETE_MESSAGES)
 @typing_action
-def add_blacklist(update, context):
+async def add_blacklist(update, context):
     msg = update.effective_message
     chat = update.effective_chat
     user = update.effective_user
@@ -77,7 +82,7 @@ def add_blacklist(update, context):
     conn = connected(context.bot, update, chat, user.id)
     if conn:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
         if chat.type == "private":
@@ -89,11 +94,7 @@ def add_blacklist(update, context):
     if len(words) > 1:
         text = words[1]
         to_blacklist = list(
-            {
-                trigger.strip()
-                for trigger in text.split("\n")
-                if trigger.strip()
-            }
+            {trigger.strip() for trigger in text.split("\n") if trigger.strip()}
         )
 
         for trigger in to_blacklist:
@@ -123,10 +124,11 @@ def add_blacklist(update, context):
             "Tell me which words you would like to add in blacklist.",
         )
 
+
 @kigcmd(command="unblacklist", pass_args=True)
 @user_admin(AdminPerms.CAN_DELETE_MESSAGES)
 @typing_action
-def unblacklist(update, context):
+async def unblacklist(update, context):
     msg = update.effective_message
     chat = update.effective_chat
     user = update.effective_user
@@ -135,7 +137,7 @@ def unblacklist(update, context):
     conn = connected(context.bot, update, chat, user.id)
     if conn:
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         chat_id = update.effective_chat.id
         if chat.type == "private":
@@ -147,11 +149,7 @@ def unblacklist(update, context):
     if len(words) > 1:
         text = words[1]
         to_unblacklist = list(
-            {
-                trigger.strip()
-                for trigger in text.split("\n")
-                if trigger.strip()
-            }
+            {trigger.strip() for trigger in text.split("\n") if trigger.strip()}
         )
 
         successful = 0
@@ -207,11 +205,12 @@ def unblacklist(update, context):
             "Tell me which words you would like to remove from blacklist!",
         )
 
+
 @kigcmd(command="blacklistmode", pass_args=True)
 @loggable
 @user_admin(AdminPerms.CAN_RESTRICT_MEMBERS)
 @typing_action
-def blacklist_mode(update, context):  # sourcery no-metrics
+async def blacklist_mode(update, context):  # sourcery no-metrics
     chat = update.effective_chat
     user = update.effective_user
     msg = update.effective_message
@@ -219,9 +218,9 @@ def blacklist_mode(update, context):  # sourcery no-metrics
 
     conn = connected(context.bot, update, chat, user.id, need_admin=True)
     if conn:
-        chat = dispatcher.bot.getChat(conn)
+        chat = await application.bot.getChat(conn)
         chat_id = conn
-        chat_name = dispatcher.bot.getChat(conn).title
+        chat_name = await application.bot.getChat(conn).title
     else:
         if update.effective_message.chat.type == "private":
             send_message(
@@ -340,10 +339,15 @@ def findall(p, s):
         i = s.find(p, i + 1)
 
 
-
-@kigmsg(((Filters.text | Filters.command | Filters.sticker | Filters.photo) & Filters.chat_type.groups), group=BLACKLIST_GROUP)
+@kigmsg(
+    (
+        (filters.TEXT | filters.COMMAND | filters.STICKER | filters.PHOTO)
+        & filters.ChatType.GROUPS
+    ),
+    group=BLACKLIST_GROUP,
+)
 @user_not_admin
-def del_blacklist(update, context):  # sourcery no-metrics
+async def del_blacklist(update, context):  # sourcery no-metrics
     chat = update.effective_chat
     message = update.effective_message
     user = update.effective_user
@@ -363,9 +367,9 @@ def del_blacklist(update, context):  # sourcery no-metrics
                 if getmode == 0:
                     return
                 elif getmode == 1:
-                    message.delete()
+                    await message.delete()
                 elif getmode == 2:
-                    message.delete()
+                    await message.delete()
                     warn(
                         update.effective_user,
                         update,
@@ -375,53 +379,53 @@ def del_blacklist(update, context):  # sourcery no-metrics
                     )
                     return
                 elif getmode == 3:
-                    message.delete()
-                    bot.restrict_chat_member(
+                    await message.delete()
+                    await bot.restrict_chat_member(
                         chat.id,
                         update.effective_user.id,
                         permissions=ChatPermissions(can_send_messages=False),
                     )
-                    bot.sendMessage(
+                    await bot.sendMessage(
                         chat.id,
                         f"Muted {user.first_name} for using Blacklisted word: {trigger}!",
                     )
                     return
                 elif getmode == 4:
-                    message.delete()
+                    await message.delete()
                     res = chat.unban_member(update.effective_user.id)
                     if res:
-                        bot.sendMessage(
+                        await bot.sendMessage(
                             chat.id,
                             f"Kicked {user.first_name} for using Blacklisted word: {trigger}!",
                         )
                     return
                 elif getmode == 5:
-                    message.delete()
+                    await message.delete()
                     chat.ban_member(user.id)
-                    bot.sendMessage(
+                    await bot.sendMessage(
                         chat.id,
                         f"Banned {user.first_name} for using Blacklisted word: {trigger}",
                     )
                     return
                 elif getmode == 6:
-                    message.delete()
+                    await message.delete()
                     bantime = extract_time(message, value)
                     chat.ban_member(user.id, until_date=bantime)
-                    bot.sendMessage(
+                    await bot.sendMessage(
                         chat.id,
                         f"Banned {user.first_name} until '{value}' for using Blacklisted word: {trigger}!",
                     )
                     return
                 elif getmode == 7:
-                    message.delete()
+                    await message.delete()
                     mutetime = extract_time(message, value)
-                    bot.restrict_chat_member(
+                    await bot.restrict_chat_member(
                         chat.id,
                         user.id,
                         until_date=mutetime,
                         permissions=ChatPermissions(can_send_messages=False),
                     )
-                    bot.sendMessage(
+                    await bot.sendMessage(
                         chat.id,
                         f"Muted {user.first_name} until '{value}' for using Blacklisted word: {trigger}!",
                     )
@@ -457,6 +461,7 @@ def __stats__():
 __mod_name__ = "Blacklists"
 
 from tg_bot.modules.language import gs
+
 
 def get_help(chat):
     return gs(chat, "blacklist_help")

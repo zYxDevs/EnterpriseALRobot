@@ -12,10 +12,11 @@ import math
 import time
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
+
 def shorten(description, info="anilist.co"):
     msg = ""
     if len(description) > 700:
-        description = f'{description[:500]}....'
+        description = f"{description[:500]}...."
         msg += f"\n*Description*: _{description}_[Read More]({info})"
     else:
         msg += f"\n*Description*:_{description}_"
@@ -36,11 +37,11 @@ def t(milliseconds: int) -> str:
     hours, minutes = divmod(minutes, 60)
     days, hours = divmod(hours, 24)
     tmp = (
-        (f'{str(days)} Days, ' if days else "")
-        + (f'{str(hours)} Hours, ' if hours else "")
-        + (f'{str(minutes)} Minutes, ' if minutes else "")
-        + (f'{str(seconds)} Seconds, ' if seconds else "")
-        + (f'{str(milliseconds)} ms, ' if milliseconds else "")
+        (f"{str(days)} Days, " if days else "")
+        + (f"{str(hours)} Hours, " if hours else "")
+        + (f"{str(minutes)} Minutes, " if minutes else "")
+        + (f"{str(seconds)} Seconds, " if seconds else "")
+        + (f"{str(milliseconds)} ms, " if milliseconds else "")
     )
 
     return tmp[:-2]
@@ -159,12 +160,13 @@ query ($id: Int,$search: String) {
 
 url = "https://graphql.anilist.co"
 
+
 @kigcmd(command="airing")
-def airing(update: Update, context: CallbackContext):
+async def airing(update: Update, context: CallbackContext):
     message = update.effective_message
-    search_str = message.text.split(" ", 1)
+    search_str = await message.text.split(" ", 1)
     if len(search_str) == 1:
-        update.effective_message.reply_text(
+        await update.effective_message.reply_text(
             "Tell Anime Name :) ( /airing <anime name>)"
         )
         return
@@ -179,14 +181,15 @@ def airing(update: Update, context: CallbackContext):
         msg += f"\n*Episode*: `{response['nextAiringEpisode']['episode']}`\n*Airing In*: `{time}`"
     else:
         msg += f"\n*Episode*:{response['episodes']}\n*Status*: `N/A`"
-    update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+    await update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
 
 @kigcmd(command="anime")
-def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
+async def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
     message = update.effective_message
-    search = message.text.split(" ", 1)
+    search = await message.text.split(" ", 1)
     if len(search) == 1:
-        update.effective_message.reply_text("Format : /anime < anime name >")
+        await update.effective_message.reply_text("Format : /anime < anime name >")
         return
     else:
         search = search[1]
@@ -195,7 +198,7 @@ def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
         url, json={"query": anime_query, "variables": variables}
     ).json()
     if "errors" in json.keys():
-        update.effective_message.reply_text("Anime not found")
+        await update.effective_message.reply_text("Anime not found")
         return
     if json:
         json = json["data"]["Media"]
@@ -215,9 +218,9 @@ def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
             site = trailer.get("site", None)
             if site == "youtube":
                 trailer = f"https://youtu.be/{trailer_id}"
-        description = (
-           bs4.BeautifulSoup(json.get("description", "N/A"), features='html.parser').text
-        )
+        description = bs4.BeautifulSoup(
+            json.get("description", "N/A"), features="html.parser"
+        ).text
         msg += shorten(description, info)
         image = json.get("bannerImage", None)
         if trailer:
@@ -231,7 +234,7 @@ def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
             buttons = [[InlineKeyboardButton("More Info", url=info)]]
         if image:
             try:
-                update.effective_message.reply_photo(
+                await update.effective_message.reply_photo(
                     photo=image,
                     caption=msg,
                     parse_mode=ParseMode.MARKDOWN,
@@ -239,24 +242,27 @@ def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
                 )
             except Exception:
                 msg += f" [〽️]({image})"
-                update.effective_message.reply_text(
+                await update.effective_message.reply_text(
                     msg,
                     parse_mode=ParseMode.MARKDOWN,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
         else:
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 msg,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(buttons),
             )
 
+
 @kigcmd(command="character")
-def character(update: Update, context: CallbackContext):
+async def character(update: Update, context: CallbackContext):
     message = update.effective_message
-    search = message.text.split(" ", 1)
+    search = await message.text.split(" ", 1)
     if len(search) == 1:
-        update.effective_message.reply_text("Format : /character < character name >")
+        await update.effective_message.reply_text(
+            "Format : /character < character name >"
+        )
         return
     search = search[1]
     variables = {"query": search}
@@ -264,32 +270,35 @@ def character(update: Update, context: CallbackContext):
         url, json={"query": character_query, "variables": variables}
     ).json()
     if "errors" in json.keys():
-        update.effective_message.reply_text("Character not found")
+        await update.effective_message.reply_text("Character not found")
         return
     if json:
         json = json["data"]["Character"]
         msg = f"*{json.get('name').get('full')}*(`{json.get('name').get('native')}`)\n"
-        description = bs4.BeautifulSoup(f"{json['description']}", features='html.parser').text
+        description = bs4.BeautifulSoup(
+            f"{json['description']}", features="html.parser"
+        ).text
         site_url = json.get("siteUrl")
         msg += shorten(description, site_url)
         if image := json.get("image", None):
             image = image.get("large")
-            update.effective_message.reply_photo(
+            await update.effective_message.reply_photo(
                 photo=image,
                 caption=msg.replace("<b>", "</b>"),
                 parse_mode=ParseMode.MARKDOWN,
             )
         else:
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 msg.replace("<b>", "</b>"), parse_mode=ParseMode.MARKDOWN
             )
 
+
 @kigcmd(command="manga")
-def manga(update: Update, context: CallbackContext):
+async def manga(update: Update, context: CallbackContext):
     message = update.effective_message
-    search = message.text.split(" ", 1)
+    search = await message.text.split(" ", 1)
     if len(search) == 1:
-        update.effective_message.reply_text("Format : /manga < manga name >")
+        await update.effective_message.reply_text("Format : /manga < manga name >")
         return
     search = search[1]
     variables = {"search": search}
@@ -298,7 +307,7 @@ def manga(update: Update, context: CallbackContext):
     ).json()
     msg = ""
     if "errors" in json.keys():
-        update.effective_message.reply_text("Manga not found")
+        await update.effective_message.reply_text("Manga not found")
         return
     if json:
         json = json["data"]["Media"]
@@ -330,7 +339,7 @@ def manga(update: Update, context: CallbackContext):
         msg += f"_{bs4.BeautifulSoup(json.get('description', None), features='html.parser').text}_"
         if image:
             try:
-                update.effective_message.reply_photo(
+                await update.effective_message.reply_photo(
                     photo=image,
                     caption=msg,
                     parse_mode=ParseMode.MARKDOWN,
@@ -338,13 +347,13 @@ def manga(update: Update, context: CallbackContext):
                 )
             except Exception:
                 msg += f" [〽️]({image})"
-                update.effective_message.reply_text(
+                await update.effective_message.reply_text(
                     msg,
                     parse_mode=ParseMode.MARKDOWN,
                     reply_markup=InlineKeyboardMarkup(buttons),
                 )
         else:
-            update.effective_message.reply_text(
+            await update.effective_message.reply_text(
                 msg,
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=InlineKeyboardMarkup(buttons),
@@ -353,7 +362,9 @@ def manga(update: Update, context: CallbackContext):
 
 from tg_bot.modules.language import gs
 
+
 def get_help(chat):
     return gs(chat, "anilist_help")
+
 
 __mod_name__ = "AniList"

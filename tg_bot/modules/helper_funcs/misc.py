@@ -2,7 +2,15 @@ from typing import Dict, List
 import typing
 from uuid import uuid4
 from tg_bot import NO_LOAD
-from telegram import MAX_MESSAGE_LENGTH, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, InlineQueryResultArticle, InputTextMessageContent
+from telegram import (
+    MAX_MESSAGE_LENGTH,
+    Bot,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ParseMode,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+)
 from telegram.error import TelegramError
 import requests
 import json
@@ -47,7 +55,7 @@ def split_message(msg: str) -> List[str]:
 
 def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
     if not chat:
-            modules = sorted(
+        modules = sorted(
             [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
@@ -59,8 +67,8 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
             ]
         )
     else:
-            modules = sorted(
-                 [
+        modules = sorted(
+            [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
                     callback_data="{}_module({},{})".format(
@@ -69,7 +77,7 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
                 )
                 for x in module_dict.values()
             ]
-             )
+        )
 
     pairs = list(zip(modules[::3], modules[1::3], modules[2::3]))
     i = 0
@@ -93,9 +101,7 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
 
     # can only have a certain amount of buttons side by side
     if len(pairs) > COLUMN_SIZE:
-        pairs = pairs[
-            modulo_page * COLUMN_SIZE : COLUMN_SIZE * (modulo_page + 1)
-        ] + [
+        pairs = pairs[modulo_page * COLUMN_SIZE : COLUMN_SIZE * (modulo_page + 1)] + [
             (
                 EqInlineKeyboardButton(
                     "❮",
@@ -113,6 +119,7 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
         ]
 
     return pairs
+
 
 def article(
     title: str = "",
@@ -135,6 +142,7 @@ def article(
         reply_markup=reply_markup,
     )
 
+
 def send_to_list(
     bot: Bot, send_to: list, message: str, markdown=False, html=False
 ) -> None:
@@ -143,11 +151,11 @@ def send_to_list(
     for user_id in set(send_to):
         try:
             if markdown:
-                bot.send_message(user_id, message, parse_mode=ParseMode.MARKDOWN)
+                await bot.send_message(user_id, message, parse_mode=ParseMode.MARKDOWN)
             elif html:
-                bot.send_message(user_id, message, parse_mode=ParseMode.HTML)
+                await bot.send_message(user_id, message, parse_mode=ParseMode.HTML)
             else:
-                bot.send_message(user_id, message)
+                await bot.send_message(user_id, message)
         except TelegramError:
             pass  # ignore users who fail
 
@@ -188,18 +196,50 @@ def build_keyboard_parser(bot, chat_id, buttons):
 def is_module_loaded(name):
     return name not in NO_LOAD
 
+
 def upload_text(data: str) -> typing.Optional[str]:
     passphrase = Random.get_random_bytes(32)
     salt = Random.get_random_bytes(8)
-    key = Protocol.KDF.PBKDF2(passphrase, salt, 32, 100000, hmac_hash_module=Hash.SHA256)
+    key = Protocol.KDF.PBKDF2(
+        passphrase, salt, 32, 100000, hmac_hash_module=Hash.SHA256
+    )
     compress = zlib.compressobj(wbits=-15)
-    paste_blob = compress.compress(json.dumps({'paste': data}, separators=(',', ':')).encode()) + compress.flush()
+    paste_blob = (
+        compress.compress(json.dumps({"paste": data}, separators=(",", ":")).encode())
+        + compress.flush()
+    )
     cipher = AES.new(key, AES.MODE_GCM)
-    paste_meta = [[base64.b64encode(cipher.nonce).decode(), base64.b64encode(salt).decode(), 100000, 256, 128, 'aes', 'gcm', 'zlib'], 'syntaxhighlighting', 0, 0]
-    cipher.update(json.dumps(paste_meta, separators=(',', ':')).encode())
+    paste_meta = [
+        [
+            base64.b64encode(cipher.nonce).decode(),
+            base64.b64encode(salt).decode(),
+            100000,
+            256,
+            128,
+            "aes",
+            "gcm",
+            "zlib",
+        ],
+        "syntaxhighlighting",
+        0,
+        0,
+    ]
+    cipher.update(json.dumps(paste_meta, separators=(",", ":")).encode())
     ct, tag = cipher.encrypt_and_digest(paste_blob)
-    resp = requests.post('https://bin.nixnet.services', headers={'X-Requested-With': 'JSONHttpRequest'}, data=json.dumps({'v': 2, 'adata': paste_meta, 'ct': base64.b64encode(ct + tag).decode(), 'meta': {'expire': '1week'}}, separators=(',', ':')))
+    resp = requests.post(
+        "https://bin.nixnet.services",
+        headers={"X-Requested-With": "JSONHttpRequest"},
+        data=json.dumps(
+            {
+                "v": 2,
+                "adata": paste_meta,
+                "ct": base64.b64encode(ct + tag).decode(),
+                "meta": {"expire": "1week"},
+            },
+            separators=(",", ":"),
+        ),
+    )
     data = resp.json()
-    url = list(urlparse(urljoin('https://bin.nixnet.services', data['url'])))
+    url = list(urlparse(urljoin("https://bin.nixnet.services", data["url"])))
     url[5] = base58.b58encode(passphrase).decode()
     return urlunparse(url)

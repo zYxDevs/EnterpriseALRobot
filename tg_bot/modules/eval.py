@@ -38,25 +38,24 @@ def send(msg, bot, update):
     if len(str(msg)) > 2000:
         with io.BytesIO(str.encode(msg)) as out_file:
             out_file.name = "output.txt"
-            bot.send_document(chat_id=update.effective_chat.id, document=out_file)
+            await bot.send_document(chat_id=update.effective_chat.id, document=out_file)
     else:
         LOGGER.info(f"OUT: '{msg}'")
-        bot.send_message(
+        await bot.send_message(
             chat_id=update.effective_chat.id,
             text=f"`{msg}`",
             parse_mode=ParseMode.MARKDOWN,
         )
 
 
-
-@kigcmd(command=("e", "ev", "eva", "eval"), filters=Filters.user(SYS_ADMIN))
-def evaluate(update: Update, context: CallbackContext):
+@kigcmd(command=("e", "ev", "eva", "eval"), filters=filters.User(SYS_ADMIN))
+async def evaluate(update: Update, context: CallbackContext):
     bot = context.bot
     send(do(eval, bot, update), bot, update)
 
 
-@kigcmd(command=("x", "ex", "exe", "exec", "py"), filters=Filters.user(SYS_ADMIN))
-def execute(update: Update, context: CallbackContext):
+@kigcmd(command=("x", "ex", "exe", "exec", "py"), filters=filters.User(SYS_ADMIN))
+async def execute(update: Update, context: CallbackContext):
     bot = context.bot
     send(do(exec, bot, update), bot, update)
 
@@ -69,13 +68,14 @@ def cleanup_code(code):
 
 def do(func, bot, update):
     log_input(update)
-    content = update.message.text.split(" ", 1)[-1]
+    content = await update.message.text.split(" ", 1)[-1]
     body = cleanup_code(content)
     env = namespace_of(update.message.chat_id, update, bot)
 
     os.chdir(os.getcwd())
     with open(
-        os.path.join(os.getcwd(), "tg_bot/modules/helper_funcs/temp.txt"), "w",
+        os.path.join(os.getcwd(), "tg_bot/modules/helper_funcs/temp.txt"),
+        "w",
     ) as temp:
         temp.write(body)
 
@@ -113,9 +113,8 @@ def do(func, bot, update):
             return result
 
 
-
-@kigcmd(command="clearlocals", filters=Filters.user(SYS_ADMIN))
-def clear(update: Update, context: CallbackContext):
+@kigcmd(command="clearlocals", filters=filters.User(SYS_ADMIN))
+async def clear(update: Update, context: CallbackContext):
     bot = context.bot
     log_input(update)
     global namespaces

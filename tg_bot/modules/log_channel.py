@@ -20,10 +20,12 @@ if is_module_loaded(FILENAME):
     from telegram.error import BadRequest, Unauthorized
     from telegram.utils.helpers import escape_markdown
 
-    from tg_bot import GBAN_LOGS, log, dispatcher
-    from tg_bot.modules.helper_funcs.chat_status import user_admin as u_admin, is_user_admin
+    from tg_bot import GBAN_LOGS, log, application
+    from tg_bot.modules.helper_funcs.chat_status import (
+        user_admin as u_admin,
+        is_user_admin,
+    )
     from tg_bot.modules.sql import log_channel_sql as sql
-
 
     def loggable(func):
         @wraps(func)
@@ -40,10 +42,10 @@ if is_module_loaded(FILENAME):
                         if message.chat.username:
                             result += f'\n<b>Link:</b> <a href="https://t.me/{chat.username}/{message.message_id}">click here</a>'
                         else:
-                            cid = str(chat.id).replace("-100", '')
+                            cid = str(chat.id).replace("-100", "")
                             result += f'\n<b>Link:</b> <a href="https://t.me/c/{cid}/{message.message_id}">click here</a>'
                 except AttributeError:
-                    result += '\n<b>Link:</b> No link for manual actions.' # or just without the whole line
+                    result += "\n<b>Link:</b> No link for manual actions."  # or just without the whole line
                 log_chat = sql.get_chat_log_channel(chat.id)
                 if log_chat:
                     send_log(context, log_chat, chat.id, result)
@@ -51,7 +53,6 @@ if is_module_loaded(FILENAME):
             return result
 
         return log_action
-
 
     def gloggable(func):
         @wraps(func)
@@ -76,13 +77,12 @@ if is_module_loaded(FILENAME):
 
         return glog_action
 
-
     def send_log(
-            context: CallbackContext, log_chat_id: str, orig_chat_id: str, result: str
+        context: CallbackContext, log_chat_id: str, orig_chat_id: str, result: str
     ):
         bot = context.bot
         try:
-            bot.send_message(
+            await bot.send_message(
                 log_chat_id,
                 result,
                 parse_mode=ParseMode.HTML,
@@ -90,7 +90,7 @@ if is_module_loaded(FILENAME):
             )
         except BadRequest as excp:
             if excp.message == "Chat not found":
-                bot.send_message(
+                await bot.send_message(
                     orig_chat_id, "This log channel has been deleted - unsetting."
                 )
                 sql.stop_chat_logging(orig_chat_id)
@@ -99,109 +99,102 @@ if is_module_loaded(FILENAME):
                 log.warning(result)
                 log.exception("Could not parse")
 
-                bot.send_message(
+                await bot.send_message(
                     log_chat_id,
                     result
                     + "\n\nFormatting has been disabled due to an unexpected error.",
                 )
 
-
-    @kigcmd(command='logchannel')
+    @kigcmd(command="logchannel")
     @u_admin
-    def logging(update: Update, context: CallbackContext):
+    async def logging(update: Update, context: CallbackContext):
         bot = context.bot
         message = update.effective_message
         chat = update.effective_chat
 
         log_channel = sql.get_chat_log_channel(chat.id)
         if log_channel:
-            log_channel_info = bot.get_chat(log_channel)
-            message.reply_text(
+            log_channel_info = await bot.get_chat(log_channel)
+            await message.reply_text(
                 f"This group has all it's logs sent to:"
                 f" {escape_markdown(log_channel_info.title)} (`{log_channel}`)",
                 parse_mode=ParseMode.MARKDOWN,
             )
 
         else:
-            message.reply_text("No log channel has been set for this group!")
+            await message.reply_text("No log channel has been set for this group!")
 
-
-    @kigcmd(command='setlog')
+    @kigcmd(command="setlog")
     @user_admin(AdminPerms.CAN_CHANGE_INFO)
-    def setlog(update: Update, context: CallbackContext):
+    async def setlog(update: Update, context: CallbackContext):
         bot = context.bot
         message = update.effective_message
         chat = update.effective_chat
         if chat.type == chat.CHANNEL:
-            message.reply_text(
+            await message.reply_text(
                 "Now, forward the /setlog to the group you want to tie this channel to!"
             )
 
         elif message.forward_from_chat:
             sql.set_chat_log_channel(chat.id, message.forward_from_chat.id)
             try:
-                message.delete()
+                await message.delete()
             except BadRequest as excp:
-                if excp.message != 'Message to delete not found':
+                if excp.message != "Message to delete not found":
                     log.exception(
-                        'Error deleting message in log channel. Should work anyway though.'
+                        "Error deleting message in log channel. Should work anyway though."
                     )
 
             try:
-                bot.send_message(
+                await bot.send_message(
                     message.forward_from_chat.id,
                     f"This channel has been set as the log channel for {chat.title or chat.first_name}.",
                 )
             except Unauthorized as excp:
                 if excp.message == "Forbidden: bot is not a member of the channel chat":
-                    bot.send_message(chat.id, "Successfully set log channel!")
+                    await bot.send_message(chat.id, "Successfully set log channel!")
                 else:
                     log.exception("ERROR in setting the log channel.")
 
-            bot.send_message(chat.id, "Successfully set log channel!")
+            await bot.send_message(chat.id, "Successfully set log channel!")
 
         else:
-            message.reply_text(
+            await message.reply_text(
                 "The steps to set a log channel are:\n"
                 " - add bot to the desired channel\n"
                 " - send /setlog to the channel\n"
                 " - forward the /setlog to the group\n"
             )
 
-
-    @kigcmd(command='unsetlog')
+    @kigcmd(command="unsetlog")
     @user_admin(AdminPerms.CAN_CHANGE_INFO)
-    def unsetlog(update: Update, context: CallbackContext):
+    async def unsetlog(update: Update, context: CallbackContext):
         bot = context.bot
         message = update.effective_message
         chat = update.effective_chat
 
         log_channel = sql.stop_chat_logging(chat.id)
         if log_channel:
-            bot.send_message(
+            await bot.send_message(
                 log_channel, f"Channel has been unlinked from {chat.title}"
             )
-            message.reply_text("Log channel has been un-set.")
+            await message.reply_text("Log channel has been un-set.")
 
         else:
-            message.reply_text("No log channel has been set yet!")
-
+            await message.reply_text("No log channel has been set yet!")
 
     def __stats__():
         return f"• {sql.num_logchannels()} log channels set."
 
-
     def __migrate__(old_chat_id, new_chat_id):
         sql.migrate_chat(old_chat_id, new_chat_id)
-
 
     def __chat_settings__(chat_id, user_id):
         log_channel = sql.get_chat_log_channel(chat_id)
         if log_channel:
-            log_channel_info = dispatcher.bot.get_chat(log_channel)
+            log_channel_info = await application.bot.get_chat(log_channel)
             return f"This group has all it's logs sent to: {escape_markdown(log_channel_info.title)} (`{log_channel}`)"
         return "No log channel is set for this group!"
-
 
     __help__ = """
 *Admins only:*
@@ -222,31 +215,30 @@ else:
     def loggable(func):
         return func
 
-
     def gloggable(func):
         return func
 
 
 @kigcmd("logsettings")
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
-def log_settings(update: Update, _: CallbackContext):
+async def log_settings(update: Update, _: CallbackContext):
     chat = update.effective_chat
     chat_set = sql.get_chat_setting(chat_id=chat.id)
     if not chat_set:
-        sql.set_chat_setting(setting=sql.LogChannelSettings(chat.id, True, True, True, True, True))
+        sql.set_chat_setting(
+            setting=sql.LogChannelSettings(chat.id, True, True, True, True, True)
+        )
     btn = InlineKeyboardMarkup(
         [
             [
                 InlineKeyboardButton(text="Warn", callback_data="log_tog_warn"),
-                InlineKeyboardButton(text="Action", callback_data="log_tog_act")
+                InlineKeyboardButton(text="Action", callback_data="log_tog_act"),
             ],
             [
                 InlineKeyboardButton(text="Join", callback_data="log_tog_join"),
-                InlineKeyboardButton(text="Leave", callback_data="log_tog_leave")
+                InlineKeyboardButton(text="Leave", callback_data="log_tog_leave"),
             ],
-            [
-                InlineKeyboardButton(text="Report", callback_data="log_tog_rep")
-            ]
+            [InlineKeyboardButton(text="Report", callback_data="log_tog_rep")],
         ]
     )
     msg = update.effective_message
@@ -257,7 +249,7 @@ from tg_bot.modules.sql import log_channel_sql as sql
 
 
 @kigcallback(pattern=r"log_tog_.*")
-def log_setting_callback(update: Update, context: CallbackContext):
+async def log_setting_callback(update: Update, context: CallbackContext):
     cb = update.callback_query
     user = cb.from_user
     chat = cb.message.chat
@@ -267,7 +259,9 @@ def log_setting_callback(update: Update, context: CallbackContext):
     setting = cb.data.replace("log_tog_", "")
     chat_set = sql.get_chat_setting(chat_id=chat.id)
     if not chat_set:
-        sql.set_chat_setting(setting=sql.LogChannelSettings(chat.id, True, True, True, True, True))
+        sql.set_chat_setting(
+            setting=sql.LogChannelSettings(chat.id, True, True, True, True, True)
+        )
 
     t = sql.get_chat_setting(chat.id)
     if setting == "warn":

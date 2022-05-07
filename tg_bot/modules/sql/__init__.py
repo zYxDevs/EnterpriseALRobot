@@ -17,7 +17,7 @@ BASE = declarative_base()
 try:
     SESSION: scoped_session = start()
 except Exception as e:
-    log.exception(f'[PostgreSQL] Failed to connect due to {e}')
+    log.exception(f"[PostgreSQL] Failed to connect due to {e}")
     exit()
-   
+
 log.info("[PostgreSQL] Connection successful, session started.")

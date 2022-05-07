@@ -18,19 +18,24 @@ flag = """
 \033[37m┌─────────────────────────────────────────────┐\033[0m\n\033[37m│\033[44m\033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[0m\033[91;101m#########################\033[0m\033[37m│\n\033[37m│\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m  \033[0m\033[97;107m:::::::::::::::::::::::::\033[0m\033[37m│\n\033[37m│\033[44m\033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[0m\033[91;101m#########################\033[0m\033[37m│\n\033[37m│\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m  \033[0m\033[97;107m:::::::::::::::::::::::::\033[0m\033[37m│\n\033[37m│\033[44m\033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[0m\033[91;101m#########################\033[0m\033[37m│\n\033[37m│\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m  \033[0m\033[97;107m:::::::::::::::::::::::::\033[0m\033[37m│\n\033[37m│\033[44m\033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[97m★\033[0m\033[44m \033[0m\033[91;101m#########################\033[0m\033[37m│      \033[1mUnited we stand, Divided we fall\033[0m\n\033[37m│\033[97;107m:::::::::::::::::::::::::::::::::::::::::::::\033[0m\033[37m│ \033[1mKigyo Project, a tribute to USS Enterprise.\033[0m\n\033[37m│\033[91;101m#############################################\033[0m\033[37m│\n\033[37m│\033[97;107m:::::::::::::::::::::::::::::::::::::::::::::\033[0m\033[37m│\n\033[37m│\033[91;101m#############################################\033[0m\033[37m│\n\033[37m│\033[97;107m:::::::::::::::::::::::::::::::::::::::::::::\033[0m\033[37m│\n\033[37m│\033[91;101m#############################################\033[0m\033[37m│\n\033[37m└─────────────────────────────────────────────┘\033[0m\n
 """
 
+
 def get_user_list(key):
     # Import here to evade a circular import
     from tg_bot.modules.sql import nation_sql
+
     royals = nation_sql.get_royals(key)
     return [a.user_id for a in royals]
 
+
 # enable logging
 
-fileConfig('logging.ini')
+fileConfig("logging.ini")
 
-#print(flag)
-log = logging.getLogger('[Enterprise]')
-logging.getLogger('ptbcontrib.postgres_persistence.postgrespersistence').setLevel(logging.WARNING)
+# print(flag)
+log = logging.getLogger("[Enterprise]")
+logging.getLogger("ptbcontrib.postgres_persistence.postgrespersistence").setLevel(
+    logging.WARNING
+)
 log.info("[KIGYO] Kigyo is starting. | An Eagle Union Project. | Licensed under GPLv3.")
 log.info("[KIGYO] Not affiliated to Azur Lane or Yostar in any way whatsoever.")
 log.info("[KIGYO] Project maintained by: github.com/Dank-del (t.me/dank_as_fuck)")
@@ -46,46 +51,50 @@ parser = ConfigParser()
 parser.read("config.ini")
 kigconfig = parser["kigconfig"]
 
+
 class KigyoINIT:
     def __init__(self, parser: ConfigParser):
         self.parser = parser
-        self.SYS_ADMIN: int = self.parser.getint('SYS_ADMIN', 0)
-        self.OWNER_ID: int = self.parser.getint('OWNER_ID')
-        self.OWNER_USERNAME: str = self.parser.get('OWNER_USERNAME', None)
+        self.SYS_ADMIN: int = self.parser.getint("SYS_ADMIN", 0)
+        self.OWNER_ID: int = self.parser.getint("OWNER_ID")
+        self.OWNER_USERNAME: str = self.parser.get("OWNER_USERNAME", None)
         self.APP_ID: str = self.parser.getint("APP_ID")
         self.API_HASH: str = self.parser.get("API_HASH")
-        self.WEBHOOK: bool = self.parser.getboolean('WEBHOOK', False)
-        self.URL: str = self.parser.get('URL', None)
-        self.CERT_PATH: str = self.parser.get('CERT_PATH', None)
-        self.PORT: int = self.parser.getint('PORT', None)
-        self.INFOPIC: bool = self.parser.getboolean('INFOPIC', False)
+        self.WEBHOOK: bool = self.parser.getboolean("WEBHOOK", False)
+        self.URL: str = self.parser.get("URL", None)
+        self.CERT_PATH: str = self.parser.get("CERT_PATH", None)
+        self.PORT: int = self.parser.getint("PORT", None)
+        self.INFOPIC: bool = self.parser.getboolean("INFOPIC", False)
         self.DEL_CMDS: bool = self.parser.getboolean("DEL_CMDS", False)
         self.STRICT_GBAN: bool = self.parser.getboolean("STRICT_GBAN", False)
         self.ALLOW_EXCL: bool = self.parser.getboolean("ALLOW_EXCL", False)
-        self.CUSTOM_CMD: List[str] = ['/', '!']
+        self.CUSTOM_CMD: List[str] = ["/", "!"]
         self.BAN_STICKER: str = self.parser.get("BAN_STICKER", None)
         self.TOKEN: str = self.parser.get("TOKEN")
         self.DB_URI: str = self.parser.get("SQLALCHEMY_DATABASE_URI")
         self.LOAD = self.parser.get("LOAD").split()
         self.LOAD: List[str] = list(map(str, self.LOAD))
-        self.MESSAGE_DUMP: int = self.parser.getint('MESSAGE_DUMP', None)
-        self.GBAN_LOGS: int = self.parser.getint('GBAN_LOGS', None)
+        self.MESSAGE_DUMP: int = self.parser.getint("MESSAGE_DUMP", None)
+        self.GBAN_LOGS: int = self.parser.getint("GBAN_LOGS", None)
         self.NO_LOAD = self.parser.get("NO_LOAD").split()
         self.NO_LOAD: List[str] = list(map(str, self.NO_LOAD))
-        self.spamwatch_api: str = self.parser.get('spamwatch_api', None)
-        self.CASH_API_KEY: str = self.parser.get('CASH_API_KEY', None)
-        self.TIME_API_KEY: str = self.parser.get('TIME_API_KEY', None)
-        self.WALL_API: str = self.parser.get('WALL_API', None)
-        self.LASTFM_API_KEY: str = self.parser.get('LASTFM_API_KEY', None)
-        self.CF_API_KEY: str =  self.parser.get("CF_API_KEY", None)
-        self.bot_id = 0 #placeholder
-        self.bot_name = "Kigyo" #placeholder
-        self.bot_username = "KigyoRobot" #placeholder
+        self.spamwatch_api: str = self.parser.get("spamwatch_api", None)
+        self.CASH_API_KEY: str = self.parser.get("CASH_API_KEY", None)
+        self.TIME_API_KEY: str = self.parser.get("TIME_API_KEY", None)
+        self.WALL_API: str = self.parser.get("WALL_API", None)
+        self.LASTFM_API_KEY: str = self.parser.get("LASTFM_API_KEY", None)
+        self.CF_API_KEY: str = self.parser.get("CF_API_KEY", None)
+        self.bot_id = 0  # placeholder
+        self.bot_name = "Kigyo"  # placeholder
+        self.bot_username = "KigyoRobot"  # placeholder
         self.DEBUG: bool = self.parser.getboolean("IS_DEBUG", False)
         self.DROP_UPDATES: bool = self.parser.getboolean("DROP_UPDATES", True)
-        self.BOT_API_URL: str = self.parser.get('BOT_API_URL', "https://api.telegram.org/bot")
-        self.BOT_API_FILE_URL: str = self.parser.get('BOT_API_FILE_URL', "https://api.telegram.org/file/bot")
-
+        self.BOT_API_URL: str = self.parser.get(
+            "BOT_API_URL", "https://api.telegram.org/bot"
+        )
+        self.BOT_API_FILE_URL: str = self.parser.get(
+            "BOT_API_FILE_URL", "https://api.telegram.org/file/bot"
+        )
 
     def init_sw(self):
         if self.spamwatch_api is None:
@@ -141,15 +150,19 @@ sw = KInit.init_sw()
 
 from tg_bot.modules.sql import SESSION
 
-if not KInit.DROP_UPDATES:
-    updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10}, persistence=PostgresPersistence(session=SESSION))
-    
-else:
-    updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10})
-    
-telethn = TelegramClient(MemorySession(), APP_ID, API_HASH)
-dispatcher = updater.dispatcher
+# updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10}) if KInit.DROP_UPDATES else tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10}, persistence=PostgresPersistence(session=SESSION))
 
+telethn = TelegramClient(MemorySession(), APP_ID, API_HASH)
+# application = updater.application
+
+app = (
+    tg.Application.builder()
+    .token(TOKEN)
+    .base_url(KInit.BOT_API_URL)
+    .base_file_url(KInit.BOT_API_FILE_URL)
+    .persistence(persistence=PostgresPersistence(session=SESSION))
+    .build()
+)
 
 
 # Load at end to ensure all prev variables have been set

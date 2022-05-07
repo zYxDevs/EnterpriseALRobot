@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Boolean
 
 from tg_bot.modules.sql import BASE, SESSION
 
+
 class LoggerSettings(BASE):
     __tablename__ = "chat_log_settings"
     chat_id = Column(String(14), primary_key=True)
@@ -16,9 +17,11 @@ class LoggerSettings(BASE):
     def __repr__(self):
         return "<Chat log setting {} ({})>".format(self.chat_id, self.setting)
 
+
 LoggerSettings.__table__.create(checkfirst=True)
 
 LOG_SETTING_LOCK = threading.RLock()
+
 
 def enable_chat_log(chat_id):
     with LOG_SETTING_LOCK:
@@ -29,6 +32,7 @@ def enable_chat_log(chat_id):
         SESSION.add(chat)
         SESSION.commit()
 
+
 def disable_chat_log(chat_id):
     with LOG_SETTING_LOCK:
         chat = SESSION.query(LoggerSettings).get(str(chat_id))
@@ -38,6 +42,7 @@ def disable_chat_log(chat_id):
         chat.setting = False
         SESSION.add(chat)
         SESSION.commit()
+
 
 def does_chat_log(chat_id):
     with LOG_SETTING_LOCK:
@@ -55,4 +60,3 @@ def migrate_chat(old_chat_id, new_chat_id):
             SESSION.add(chat)
 
         SESSION.commit()
-
