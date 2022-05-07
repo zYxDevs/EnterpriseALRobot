@@ -1,12 +1,12 @@
 from enum import Enum
 import functools
 
-from telegram import Update, ParseMode
+from telegram import Update#, ParseMode
 from telegram.ext import CallbackContext
-from telegram.inline.inlinekeyboardbutton import InlineKeyboardButton
-from telegram.inline.inlinekeyboardmarkup import InlineKeyboardMarkup
-
-from tg_bot import DEV_USERS, SUDO_USERS, application
+from telegram import InlineKeyboardButton
+from telegram import InlineKeyboardMarkup
+from telegram.constants import ParseMode
+from tg_bot import DEV_USERS, SUDO_USERS, app as application
 from .decorators import kigcallback
 
 
@@ -31,14 +31,12 @@ anon_callback_messages = {}
 def user_admin(permission: AdminPerms):
     def wrapper(func):
         @functools.wraps(func)
-        def awrapper(update: Update, context: CallbackContext, *args, **kwargs):
+        async def awrapper(update: Update, context: CallbackContext, *args, **kwargs):
             nonlocal permission
             if update.effective_chat.type == "private":
                 return func(update, context, *args, **kwargs)
             message = update.effective_message
-            is_anon = update.effective_message.sender_chat
-
-            if is_anon:
+            if is_anon := update.effective_message.sender_chat:
                 callback_id = (
                     f"anoncb/{message.chat.id}/{message.message_id}/{permission.value}"
                 )
@@ -60,7 +58,6 @@ def user_admin(permission: AdminPerms):
                         ),
                     )
                 ).message_id
-                # send message with callback f'anoncb{callback_id}'
             else:
                 user_id = message.from_user.id
                 chat_id = message.chat.id
@@ -85,7 +82,7 @@ def user_admin(permission: AdminPerms):
 
 
 @kigcallback(pattern="anoncb")
-def anon_callback_handler1(upd: Update, _: CallbackContext):
+async def anon_callback_handler1(upd: Update, _: CallbackContext):
     callback = upd.callback_query
     perm = callback.data.split("/")[3]
     chat_id = int(callback.data.split("/")[1])
@@ -108,8 +105,7 @@ def anon_callback_handler1(upd: Update, _: CallbackContext):
         or mem.status == "creator"
         or mem.user.id in DEV_USERS
     ):
-        cb = anon_callbacks.pop((chat_id, message_id), None)
-        if cb:
+        if cb := anon_callbacks.pop((chat_id, message_id), None):
             message_id = anon_callback_messages.pop((chat_id, message_id), None)
             if message_id is not None:
                 await application.bot.delete_message(chat_id, message_id)

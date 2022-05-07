@@ -4,7 +4,7 @@ from telethon import events
 from telegram import Update
 from telegram.ext import CallbackContext, CommandHandler
 
-from tg_bot import telethn, application
+from tg_bot import telethn, app as application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
 
 DEBUG_MODE = False
@@ -38,7 +38,7 @@ async def i_do_nothing_yes(event):
             with open("updates.txt", "r") as f:
                 text = f.read()
             with open("updates.txt", "w+") as f:
-                f.write(text + f"\n-{event.from_id} ({event.chat_id}) : {event.text}")
+                f.write(f"{text}\n-{event.from_id} ({event.chat_id}) : {event.text}")
         else:
             with open("updates.txt", "w+") as f:
                 f.write(

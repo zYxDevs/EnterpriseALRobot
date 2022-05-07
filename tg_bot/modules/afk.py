@@ -4,7 +4,7 @@ import logging
 import random
 
 from telegram import Update, MessageEntity
-from telegram.ext import Filters, CallbackContext
+from telegram.ext import filters, CallbackContext
 from telegram.error import BadRequest
 from tg_bot.modules.sql import afk_sql as sql
 from tg_bot.modules.users import get_user_id
@@ -102,7 +102,7 @@ async def reply_afk(update: Update, context: CallbackContext):
             if ent.type != MessageEntity.MENTION:
                 return
 
-            user_id = get_user_id(message.text[ent.offset : ent.offset + ent.length])
+            user_id = await get_user_id(message.text[ent.offset : ent.offset + ent.length])
             if not user_id:
                 # Should never happen, since for a user to become AFK they must have spoken. Maybe changed username?
                 return

@@ -1,9 +1,9 @@
 import html
-
-from telegram import ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, Update
+from telegram.constants import ParseMode
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, Filters
-from telegram.utils.helpers import mention_html
+from telegram.ext import CallbackContext, filters
+from telegram.helpers import mention_html
 
 import tg_bot.modules.sql.approve_sql as sql
 from tg_bot import SUDO_USERS

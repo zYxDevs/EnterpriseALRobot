@@ -1,6 +1,7 @@
 import requests
 from tg_bot import CASH_API_KEY
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 

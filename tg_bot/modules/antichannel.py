@@ -1,6 +1,6 @@
-from telegram.ext.filters import Filters
+from telegram.ext import filters
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg
-from telegram import Update, message
+from telegram import Update
 from telegram.ext import CallbackContext
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 import html
@@ -21,22 +21,14 @@ async def set_antichannel(update: Update, context: CallbackContext):
         s = args[0].lower()
         if s in ["yes", "on"]:
             enable_antichannel(chat.id)
-            await message.reply_html(
-                "Enabled antichannel in {}".format(html.escape(chat.title))
-            )
+            await message.reply_html(f"Enabled antichannel in {html.escape(chat.title)}")
         elif s in ["off", "no"]:
             disable_antichannel(chat.id)
-            await message.reply_html(
-                "Disabled antichannel in {}".format(html.escape(chat.title))
-            )
+            await message.reply_html(f"Disabled antichannel in {html.escape(chat.title)}")
         else:
-            await message.reply_text("Unrecognized arguments {}".format(s))
+            await message.reply_text(f"Unrecognized arguments {s}")
         return
-    await message.reply_html(
-        "Antichannel setting is currently {} in {}".format(
-            antichannel_status(chat.id), html.escape(chat.title)
-        )
-    )
+    await message.reply_html(f"Antichannel setting is currently {antichannel_status(chat.id)} in {html.escape(chat.title)}")
 
 
 @kigmsg(filters.ChatType.GROUPS, group=110)

@@ -1,3 +1,4 @@
+import contextlib
 from functools import wraps
 
 from tg_bot import (
@@ -7,11 +8,13 @@ from tg_bot import (
     SUPPORT_USERS,
     SARDEGNA_USERS,
     WHITELIST_USERS,
-    application,
+    app as application,
 )
+from telegram.constants import ParseMode
 from cachetools import TTLCache
-from telegram import Chat, ChatMember, ParseMode, Update, TelegramError, User
+from telegram import Chat, ChatMember, Update, User
 from telegram.ext import CallbackContext
+from telegram.error import TelegramError
 
 # stores admin in memory for 10 min.
 ADMIN_CACHE = TTLCache(maxsize=512, ttl=60 * 10)
@@ -42,7 +45,7 @@ def is_sudo_plus(_: Chat, user_id: int) -> bool:
     return user_id in SUDO_USERS or user_id in DEV_USERS
 
 
-def is_user_admin(update: Update, user_id: int, member: ChatMember = None) -> bool:
+async def is_user_admin(update: Update, user_id: int, member: ChatMember = None) -> bool:
     chat = update.effective_chat
     msg = update.effective_message
     if (
@@ -122,7 +125,7 @@ def is_user_in_chat(chat: Chat, user_id: int) -> bool:
 
 def dev_plus(func):
     @wraps(func)
-    def is_dev_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_dev_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
         # bot = context.bot
         user = update.effective_user
 
@@ -131,10 +134,8 @@ def dev_plus(func):
         elif not user:
             pass
         elif DEL_CMDS and " " not in update.effective_message.text:
-            try:
+            with contextlib.suppress(TelegramError):
                 await update.effective_message.delete()
-            except TelegramError:
-                pass
         else:
             await update.effective_message.reply_text(
                 "This is a developer restricted command."
@@ -146,7 +147,7 @@ def dev_plus(func):
 
 def sudo_plus(func):
     @wraps(func)
-    def is_sudo_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_sudo_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
         # bot = context.bot
         user = update.effective_user
         chat = update.effective_chat
@@ -156,10 +157,8 @@ def sudo_plus(func):
         elif not user:
             pass
         elif DEL_CMDS and " " not in update.effective_message.text:
-            try:
+            with contextlib.suppress(TelegramError):
                 await update.effective_message.delete()
-            except TelegramError:
-                pass
         else:
             await update.effective_message.reply_text(
                 "Who dis non-admin telling me what to do?"
@@ -170,7 +169,7 @@ def sudo_plus(func):
 
 def support_plus(func):
     @wraps(func)
-    def is_support_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_support_plus_func(update: Update, context: CallbackContext, *args, **kwargs):
         # bot = context.bot
         user = update.effective_user
         chat = update.effective_chat
@@ -178,17 +177,15 @@ def support_plus(func):
         if user and is_support_plus(chat, user.id):
             return func(update, context, *args, **kwargs)
         elif DEL_CMDS and " " not in update.effective_message.text:
-            try:
+            with contextlib.suppress(TelegramError):
                 await update.effective_message.delete()
-            except TelegramError:
-                pass
 
     return is_support_plus_func
 
 
 def whitelist_plus(func):
     @wraps(func)
-    def is_whitelist_plus_func(
+    async def is_whitelist_plus_func(
         update: Update, context: CallbackContext, *args, **kwargs
     ):
         # bot = context.bot
@@ -207,20 +204,18 @@ def whitelist_plus(func):
 
 def user_admin(func):
     @wraps(func)
-    def is_admin(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_admin(update: Update, context: CallbackContext, *args, **kwargs):
         # bot = context.bot
         user = update.effective_user
         # chat = update.effective_chat
 
-        if user and is_user_admin(update, user.id):
+        if user and (await is_user_admin(update, user.id)):
             return func(update, context, *args, **kwargs)
         elif not user:
             pass
         elif DEL_CMDS and " " not in update.effective_message.text:
-            try:
+            with contextlib.suppress(TelegramError):
                 await update.effective_message.delete()
-            except TelegramError:
-                pass
         else:
             await update.effective_message.reply_text(
                 "Who dis non-admin telling me what to do?"
@@ -231,29 +226,27 @@ def user_admin(func):
 
 def user_admin_no_reply(func):
     @wraps(func)
-    def is_not_admin_no_reply(
+    async def is_not_admin_no_reply(
         update: Update, context: CallbackContext, *args, **kwargs
     ):
         # bot = context.bot
         user = update.effective_user
         # chat = update.effective_chat
 
-        if user and is_user_admin(update, user.id):
+        if user and (await is_user_admin(update, user.id)):
             return func(update, context, *args, **kwargs)
         elif not user:
             pass
         elif DEL_CMDS and " " not in update.effective_message.text:
-            try:
+            with contextlib.suppress(TelegramError):
                 await update.effective_message.delete()
-            except TelegramError:
-                pass
 
     return is_not_admin_no_reply
 
 
 def user_not_admin(func):
     @wraps(func)
-    def is_not_admin(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_not_admin(update: Update, context: CallbackContext, *args, **kwargs):
         message = update.effective_message
         user = update.effective_user
         # chat = update.effective_chat
@@ -262,7 +255,7 @@ def user_not_admin(func):
             return
         if message.sender_chat and message.sender_chat.type != "channel":
             return
-        elif user and not is_user_admin(update, user.id):
+        elif user and not (await is_user_admin(update, user.id)):
             return func(update, context, *args, **kwargs)
 
         elif not user:
@@ -273,7 +266,7 @@ def user_not_admin(func):
 
 def bot_admin(func):
     @wraps(func)
-    def is_admin(update: Update, context: CallbackContext, *args, **kwargs):
+    async def is_admin(update: Update, context: CallbackContext, *args, **kwargs):
         bot = context.bot
         chat = update.effective_chat
         update_chat_title = chat.title
@@ -296,7 +289,7 @@ def bot_admin(func):
 
 def bot_can_delete(func):
     @wraps(func)
-    def delete_rights(update: Update, context: CallbackContext, *args, **kwargs):
+    async def delete_rights(update: Update, context: CallbackContext, *args, **kwargs):
         bot = context.bot
         chat = update.effective_chat
         update_chat_title = chat.title
@@ -322,7 +315,7 @@ def bot_can_delete(func):
 
 def can_pin(func):
     @wraps(func)
-    def pin_rights(update: Update, context: CallbackContext, *args, **kwargs):
+    async def pin_rights(update: Update, context: CallbackContext, *args, **kwargs):
         bot = context.bot
         chat = update.effective_chat
         update_chat_title = chat.title
@@ -350,7 +343,7 @@ def can_pin(func):
 
 def can_promote(func):
     @wraps(func)
-    def promote_rights(update: Update, context: CallbackContext, *args, **kwargs):
+    async def promote_rights(update: Update, context: CallbackContext, *args, **kwargs):
         bot = context.bot
         chat = update.effective_chat
         update_chat_title = chat.title
@@ -376,7 +369,7 @@ def can_promote(func):
 
 def can_restrict(func):
     @wraps(func)
-    def restrict_rights(update: Update, context: CallbackContext, *args, **kwargs):
+    async def restrict_rights(update: Update, context: CallbackContext, *args, **kwargs):
         bot = context.bot
         chat = update.effective_chat
         update_chat_title = chat.title
@@ -390,7 +383,7 @@ def can_restrict(func):
                 f"can restrict users. "
             )
 
-        if chat.get_member(bot.id).can_restrict_members:
+        if (await chat.get_member(bot.id)).can_restrict_members:
             return func(update, context, *args, **kwargs)
         else:
             await update.effective_message.reply_text(
@@ -402,15 +395,12 @@ def can_restrict(func):
 
 def user_can_ban(func):
     @wraps(func)
-    def user_is_banhammer(update: Update, context: CallbackContext, *args, **kwargs):
+    async def user_is_banhammer(update: Update, context: CallbackContext, *args, **kwargs):
         # bot = context.bot
         user = update.effective_user.id
         member = await update.effective_chat.get_member(user)
 
-        if (
-            not (member.can_restrict_members or member.status == "creator")
-            and not user in SUDO_USERS
-        ):
+        if not member.can_restrict_members and member.status != "creator" and user not in SUDO_USERS:
             await update.effective_message.reply_text(
                 "Sorry son, but you're not worthy to wield the banhammer."
             )
@@ -423,27 +413,17 @@ def user_can_ban(func):
 
 def connection_status(func):
     @wraps(func)
-    def connected_status(update: Update, context: CallbackContext, *args, **kwargs):
-        conn = connected(
-            context.bot,
-            update,
-            update.effective_chat,
-            update.effective_user.id,
-            need_admin=False,
-        )
-
-        if conn:
+    async def connected_status(update: Update, context: CallbackContext, *args, **kwargs):
+        if conn := connected(context.bot, update, update.effective_chat, update.effective_user.id, need_admin=False,):
             chat = await application.bot.getChat(conn)
             await update.__setattr__("_effective_chat", chat)
-            return func(update, context, *args, **kwargs)
-        else:
-            if update.effective_message.chat.type == "private":
-                await update.effective_message.reply_text(
-                    "Send /connect in a group that you and I have in common first."
-                )
-                return connected_status
+        elif update.effective_message.chat.type == "private":
+            await update.effective_message.reply_text(
+                "Send /connect in a group that you and I have in common first."
+            )
+            return connected_status
 
-            return func(update, context, *args, **kwargs)
+        return func(update, context, *args, **kwargs)
 
     return connected_status
 

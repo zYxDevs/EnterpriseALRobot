@@ -1,4 +1,4 @@
-from gpytranslate import SyncTranslator
+from gpytranslate import Translator
 from tg_bot.modules.language import gs
 
 
@@ -8,9 +8,9 @@ def get_help(chat):
 
 __mod_name__ = "Translator"
 
-trans = SyncTranslator()
-
-from telegram import ParseMode, Update
+trans = Translator()
+from telegram.constants import ParseMode
+from telegram import Update
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
@@ -34,12 +34,12 @@ async def translate(update: Update, context: CallbackContext) -> None:
             source = args.split("//")[0]
             dest = args.split("//")[1]
         else:
-            source = trans.detect(to_translate)
+            source = await trans.detect(to_translate)
             dest = args
     except IndexError:
-        source = trans.detect(to_translate)
+        source = await trans.detect(to_translate)
         dest = "en"
-    translation = trans(to_translate, sourcelang=source, targetlang=dest)
+    translation = await trans.translate(to_translate, sourcelang=source, targetlang=dest)
     reply = (
         f"<b>Translated from {source} to {dest}</b>:\n"
         f"<code>{translation.text}</code>"

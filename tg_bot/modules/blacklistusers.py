@@ -8,15 +8,16 @@ from tg_bot import (
     SUPPORT_USERS,
     SARDEGNA_USERS,
     WHITELIST_USERS,
-    application,
+    app as application,
 )
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
 from tg_bot.modules.helper_funcs.extraction import extract_user, extract_user_and_text
 from tg_bot.modules.log_channel import gloggable
-from telegram import ParseMode, Update
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
+from telegram.helpers import mention_html
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
 BLACKLISTWHITELIST = (
@@ -25,14 +26,14 @@ BLACKLISTWHITELIST = (
 BLABLEUSERS = [OWNER_ID] + DEV_USERS
 
 
-@kigcmd(command="ignore", pass_args=True)
+@kigcmd(command="ignore")
 @dev_plus
 @gloggable
 async def bl_user(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     user = update.effective_user
     bot, args = context.bot, context.args
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
 
     if not user_id:
         await message.reply_text("I doubt that's a user.")
@@ -68,7 +69,7 @@ async def bl_user(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command="notice", pass_args=True)
+@kigcmd(command="notice")
 @dev_plus
 @gloggable
 async def unbl_user(update: Update, context: CallbackContext) -> str:
@@ -111,22 +112,20 @@ async def unbl_user(update: Update, context: CallbackContext) -> str:
         return ""
 
 
-@kigcmd(command="ignoredlist", pass_args=True)
+@kigcmd(command="ignoredlist")
 @dev_plus
 async def bl_users(update: Update, context: CallbackContext):
     users = []
     bot = context.bot
     for each_user in sql.BLACKLIST_USERS:
         user = await bot.get_chat(each_user)
-        reason = sql.get_reason(each_user)
-
-        if reason:
+        if reason := sql.get_reason(each_user):
             users.append(f"• {mention_html(user.id, user.first_name)} :- {reason}")
         else:
             users.append(f"• {mention_html(user.id, user.first_name)}")
 
-    message = "<b>Blacklisted Users</b>\n"
-    message += "\n".join(users) if users else "Noone is being ignored as of yet."
+    message = "<b>Blacklisted Users</b>\n" + ("\n".join(users) if users else "Noone is being ignored as of yet.")
+
     await update.effective_message.reply_text(message, parse_mode=ParseMode.HTML)
 
 
@@ -148,8 +147,7 @@ def __user_info__(user_id):
         return ""
     if is_blacklisted:
         text = text.format("Yes")
-        reason = sql.get_reason(user_id)
-        if reason:
+        if reason := sql.get_reason(user_id):
             text += f"\nReason: <code>{reason}</code>"
     else:
         text = text.format("No")

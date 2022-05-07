@@ -14,7 +14,7 @@ class ChatLangs(BASE):
         self.language = language
 
     def __repr__(self):
-        return "Language {} chat {}".format(self.language, self.chat_id)
+        return f"Language {self.language} chat {self.chat_id}"
 
 
 CHAT_LANG = {}

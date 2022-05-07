@@ -1,11 +1,11 @@
 from datetime import datetime
 from functools import wraps
-
+import asyncio
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigcallback
 from tg_bot.modules.helper_funcs.misc import is_module_loaded
 from tg_bot.modules.language import gs
-
+from ..import app as application
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
 
@@ -16,11 +16,12 @@ def get_help(chat):
 FILENAME = __name__.rsplit(".", 1)[-1]
 
 if is_module_loaded(FILENAME):
-    from telegram import ParseMode, Update, InlineKeyboardMarkup, InlineKeyboardButton
-    from telegram.error import BadRequest, Unauthorized
-    from telegram.utils.helpers import escape_markdown
+    from telegram.constants import ParseMode
+    from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+    from telegram.error import BadRequest, Forbidden
+    from telegram.helpers import escape_markdown
 
-    from tg_bot import GBAN_LOGS, log, application
+    from tg_bot import GBAN_LOGS, log, app as application
     from tg_bot.modules.helper_funcs.chat_status import (
         user_admin as u_admin,
         is_user_admin,
@@ -77,7 +78,7 @@ if is_module_loaded(FILENAME):
 
         return glog_action
 
-    def send_log(
+    async def send_log(
         context: CallbackContext, log_chat_id: str, orig_chat_id: str, result: str
     ):
         bot = context.bot
@@ -150,7 +151,7 @@ if is_module_loaded(FILENAME):
                     message.forward_from_chat.id,
                     f"This channel has been set as the log channel for {chat.title or chat.first_name}.",
                 )
-            except Unauthorized as excp:
+            except Forbidden as excp:
                 if excp.message == "Forbidden: bot is not a member of the channel chat":
                     await bot.send_message(chat.id, "Successfully set log channel!")
                 else:
@@ -192,7 +193,7 @@ if is_module_loaded(FILENAME):
     def __chat_settings__(chat_id, user_id):
         log_channel = sql.get_chat_log_channel(chat_id)
         if log_channel:
-            log_channel_info = await application.bot.get_chat(log_channel)
+            log_channel_info = asyncio.get_running_loop().run_until_complete(application.bot.get_chat(log_channel))
             return f"This group has all it's logs sent to: {escape_markdown(log_channel_info.title)} (`{log_channel}`)"
         return "No log channel is set for this group!"
 
@@ -253,7 +254,7 @@ async def log_setting_callback(update: Update, context: CallbackContext):
     cb = update.callback_query
     user = cb.from_user
     chat = cb.message.chat
-    if not is_user_admin(update, user.id):
+    if not (await is_user_admin(update, user.id)):
         cb.answer("You aren't admin", show_alert=True)
         return
     setting = cb.data.replace("log_tog_", "")

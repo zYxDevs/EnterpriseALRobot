@@ -1,16 +1,18 @@
+import contextlib
 from typing import Dict, List
 import typing
 from uuid import uuid4
 from tg_bot import NO_LOAD
 from telegram import (
-    MAX_MESSAGE_LENGTH,
+    # MAX_MESSAGE_LENGTH,
     Bot,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ParseMode,
+    # ParseMode,
     InlineQueryResultArticle,
     InputTextMessageContent,
 )
+from telegram.constants import ParseMode, MessageLimit
 from telegram.error import TelegramError
 import requests
 import json
@@ -22,7 +24,7 @@ from Crypto import Random, Hash, Protocol
 from Crypto.Cipher import AES
 from math import ceil
 
-
+MAX_MESSAGE_LENGTH = MessageLimit.TEXT_LENGTH
 class EqInlineKeyboardButton(InlineKeyboardButton):
     def __eq__(self, other):
         return self.text == other.text
@@ -54,30 +56,27 @@ def split_message(msg: str) -> List[str]:
 
 
 def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
-    if not chat:
-        modules = sorted(
+    modules = (
+        sorted(
             [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
-                    callback_data="{}_module({})".format(
-                        prefix, x.__mod_name__.replace(" ", "_").lower()
-                    ),
+                    callback_data=f'{prefix}_module({chat},{x.__mod_name__.replace(" ", "_").lower()})',
                 )
                 for x in module_dict.values()
             ]
         )
-    else:
-        modules = sorted(
+        if chat
+        else sorted(
             [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
-                    callback_data="{}_module({},{})".format(
-                        prefix, chat, x.__mod_name__.replace(" ", "_").lower()
-                    ),
+                    callback_data=f'{prefix}_module({x.__mod_name__.replace(" ", "_").lower()})',
                 )
                 for x in module_dict.values()
             ]
         )
+    )
 
     pairs = list(zip(modules[::3], modules[1::3], modules[2::3]))
     i = 0
@@ -104,16 +103,14 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
         pairs = pairs[modulo_page * COLUMN_SIZE : COLUMN_SIZE * (modulo_page + 1)] + [
             (
                 EqInlineKeyboardButton(
-                    "❮",
-                    callback_data="{}_prev({})".format(prefix, modulo_page),
+                    "❮", callback_data=f"{prefix}_prev({modulo_page})"
                 ),
                 EqInlineKeyboardButton(
                     "Back",
                     callback_data="start_back",
                 ),
                 EqInlineKeyboardButton(
-                    "❯",
-                    callback_data="{}_next({})".format(prefix, modulo_page),
+                    "❯", callback_data=f"{prefix}_next({modulo_page})"
                 ),
             )
         ]
@@ -143,21 +140,19 @@ def article(
     )
 
 
-def send_to_list(
+async def send_to_list(
     bot: Bot, send_to: list, message: str, markdown=False, html=False
-) -> None:
+) -> None:  # sourcery skip: raise-specific-error
     if html and markdown:
         raise Exception("Can only send with either markdown or HTML!")
     for user_id in set(send_to):
-        try:
+        with contextlib.suppress(TelegramError):
             if markdown:
                 await bot.send_message(user_id, message, parse_mode=ParseMode.MARKDOWN)
             elif html:
                 await bot.send_message(user_id, message, parse_mode=ParseMode.HTML)
             else:
                 await bot.send_message(user_id, message)
-        except TelegramError:
-            pass  # ignore users who fail
 
 
 def build_keyboard(buttons):
@@ -184,7 +179,7 @@ def build_keyboard_parser(bot, chat_id, buttons):
     keyb = []
     for btn in buttons:
         if btn.url == "{rules}":
-            btn.url = "http://t.me/{}?start={}".format(bot.username, chat_id)
+            btn.url = f"http://t.me/{bot.username}?start={chat_id}"
         if btn.same_line and keyb:
             keyb[-1].append(InlineKeyboardButton(btn.name, url=btn.url))
         else:

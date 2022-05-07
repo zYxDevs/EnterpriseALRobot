@@ -2,14 +2,12 @@
 import bs4
 from telegram.ext import CallbackContext
 from telegram import (
-    ParseMode,
     Update,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from telegram.constants import ParseMode
 import requests
-import math
-import time
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
 
@@ -162,7 +160,7 @@ url = "https://graphql.anilist.co"
 
 
 @kigcmd(command="airing")
-async def airing(update: Update, context: CallbackContext):
+async def airing(update: Update, context: CallbackContext.DEFAULT_TYPE):
     message = update.effective_message
     search_str = await message.text.split(" ", 1)
     if len(search_str) == 1:
@@ -185,7 +183,7 @@ async def airing(update: Update, context: CallbackContext):
 
 
 @kigcmd(command="anime")
-async def anime(update: Update, context: CallbackContext):  # sourcery no-metrics
+async def anime(update: Update, context: CallbackContext.DEFAULT_TYPE):  # sourcery no-metrics
     message = update.effective_message
     search = await message.text.split(" ", 1)
     if len(search) == 1:

@@ -7,13 +7,13 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
-    ParseMode,
     Update,
     User,
 )
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, Filters
-from telegram.utils.helpers import escape_markdown
+from telegram.ext import CallbackContext, filters
+from telegram.helpers import escape_markdown
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
@@ -22,11 +22,11 @@ from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 @kigcmd(command="rules", filters=filters.ChatType.GROUPS)
 async def get_rules(update: Update, _: CallbackContext):
     chat_id = update.effective_chat.id
-    send_rules(update, chat_id)
+    await send_rules(update, chat_id)
 
 
-# Do not async - not from a handler
-def send_rules(update, chat_id, from_pm=False):
+
+async def send_rules(update, chat_id, from_pm=False):
     bot = application.bot
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message

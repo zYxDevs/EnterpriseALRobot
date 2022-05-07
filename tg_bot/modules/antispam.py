@@ -13,7 +13,7 @@ from tg_bot import (
     SARDEGNA_USERS,
     WHITELIST_USERS,
     sw,
-    application,
+    app as application,
     log,
 )
 from tg_bot.modules.helper_funcs.chat_status import (
@@ -22,10 +22,11 @@ from tg_bot.modules.helper_funcs.chat_status import (
 )
 from tg_bot.modules.helper_funcs.extraction import extract_user, extract_user_and_text
 from tg_bot.modules.helper_funcs.misc import send_to_list
-from telegram import ParseMode, Update
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.error import BadRequest, TelegramError
-from telegram.ext import CallbackContext, Filters
-from telegram.utils.helpers import mention_html
+from telegram.ext import CallbackContext, filters
+from telegram.helpers import mention_html
 from spamwatch.errors import (
     SpamWatchError,
     Error,
@@ -78,7 +79,7 @@ async def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
     chat = update.effective_chat
     log_message = ""
 
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
 
     if not user_id:
         await message.reply_text(
@@ -410,7 +411,7 @@ async def gbanlist(update: Update, context: CallbackContext):
         )
 
 
-def check_and_ban(update, user_id, should_message=True):
+async def check_and_ban(update, user_id, should_message=True):
     chat = update.effective_chat  # type: Optional[Chat]
     try:
         sw_ban = sw.get_ban(int(user_id))
@@ -465,19 +466,19 @@ async def enforce_gban(update: Update, context: CallbackContext):
         chat = update.effective_chat
         msg = update.effective_message
 
-        if user and not is_user_admin(update, user.id):
-            check_and_ban(update, user.id)
+        if user and not (await is_user_admin(update, user.id)):
+            await check_and_ban(update, user.id)
             return
 
         if msg.new_chat_members:
             new_members = update.effective_message.new_chat_members
             for mem in new_members:
-                check_and_ban(update, mem.id)
+                await check_and_ban(update, mem.id)
 
         if msg.reply_to_message:
             user = msg.reply_to_message.from_user
-            if user and not is_user_admin(update, user.id):
-                check_and_ban(update, user.id, should_message=False)
+            if user and not (await is_user_admin(update, user.id)):
+                await check_and_ban(update, user.id, should_message=False)
 
 
 @kigcmd(command="antispam")

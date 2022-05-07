@@ -1,3 +1,4 @@
+import contextlib
 import html
 import random
 import re
@@ -33,7 +34,7 @@ from telegram import (
     ChatPermissions,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ParseMode,
+    # ParseMode,
     Update,
     ChatMember,
     User,
@@ -43,10 +44,11 @@ from telegram.ext import (
     CallbackContext,
     CallbackQueryHandler,
     CommandHandler,
-    Filters,
+    filters,
     MessageHandler,
 )
-from telegram.utils.helpers import escape_markdown, mention_html, mention_markdown
+from telegram.constants import ParseMode
+from telegram.helpers import escape_markdown, mention_html, mention_markdown
 import tg_bot.modules.sql.log_channel_sql as logsql
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
@@ -81,17 +83,15 @@ WHITELISTED = (
     [OWNER_ID, SYS_ADMIN] + DEV_USERS + SUDO_USERS + SUPPORT_USERS + WHITELIST_USERS
 )
 
-# do not async
-def send(update, message, keyboard, backup_message):
+
+async def send(update, message, keyboard, backup_message):
     chat = update.effective_chat
     cleanserv = sql.clean_service(chat.id)
     reply = update.message.message_id
     # Clean service welcome
     if cleanserv:
-        try:
+        with contextlib.suppress(BadRequest):
             await application.bot.delete_message(chat.id, update.message.message_id)
-        except BadRequest:
-            pass
         reply = False
     try:
         msg = await update.effective_message.reply_text(
@@ -552,7 +552,7 @@ async def new_member(update: Update, context: CallbackContext):  # sourcery no-m
                         parse_mode="markdown",
                     )
             else:
-                sent = send(update, res, keyboard, backup_message)
+                sent = await send(update, res, keyboard, backup_message)
             prev_welc = sql.get_clean_pref(chat.id)
             if prev_welc:
                 try:
@@ -571,7 +571,7 @@ async def new_member(update: Update, context: CallbackContext):  # sourcery no-m
     return ""
 
 
-def check_not_bot(
+async def check_not_bot(
     member: User, chat_id: int, message_id: int, context: CallbackContext
 ):
     bot = context.bot
@@ -701,7 +701,7 @@ async def left_member(update: Update, context: CallbackContext):  # sourcery no-
 
             keyboard = InlineKeyboardMarkup(keyb)
 
-            send(
+            await send(
                 update,
                 res,
                 keyboard,
@@ -733,7 +733,7 @@ async def welcome(update: Update, context: CallbackContext):
                 keyb = build_keyboard(buttons)
                 keyboard = InlineKeyboardMarkup(keyb)
 
-                send(update, welcome_m, keyboard, sql.DEFAULT_WELCOME)
+                await send(update, welcome_m, keyboard, sql.DEFAULT_WELCOME)
         else:
             buttons = sql.get_welc_buttons(chat.id)
             if noformat:
@@ -795,7 +795,7 @@ async def goodbye(update: Update, context: CallbackContext):
                 keyb = build_keyboard(buttons)
                 keyboard = InlineKeyboardMarkup(keyb)
 
-                send(update, goodbye_m, keyboard, sql.DEFAULT_GOODBYE)
+                await send(update, goodbye_m, keyboard, sql.DEFAULT_GOODBYE)
 
         elif noformat:
             ENUM_FUNC_MAP[goodbye_type](chat.id, goodbye_m)
@@ -1097,7 +1097,7 @@ async def user_button(update: Update, context: CallbackContext):
                     parse_mode="markdown",
                 )
             else:
-                sent = send(
+                sent = await send(
                     member_dict["update"],
                     member_dict["res"],
                     member_dict["keyboard"],
@@ -1167,7 +1167,7 @@ async def user_captcha_button(update: Update, context: CallbackContext):
                         parse_mode="markdown",
                     )
                 else:
-                    sent = send(
+                    sent = await send(
                         member_dict["update"],
                         member_dict["res"],
                         member_dict["keyboard"],

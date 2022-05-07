@@ -8,14 +8,13 @@ from PIL import Image
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    ParseMode,
     TelegramError,
     Update,
 )
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
+from telegram.helpers import mention_html
 from tg_bot.modules.helper_funcs.decorators import kigcmd
-
+from telegram.constants import ParseMode
 
 @kigcmd(command="stickerid")
 async def stickerid(update: Update, context: CallbackContext):
@@ -319,7 +318,7 @@ async def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
         if e.message == "Stickerset_invalid":
             # if we need to make a sticker pack, make one and make this the
             # first sticker in the pack.
-            makepack_internal(
+            await makepack_internal(
                 update,
                 context,
                 msg,
@@ -355,7 +354,7 @@ async def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
             raise
 
 
-def makepack_internal(
+async def makepack_internal(
     update,
     context,
     msg,

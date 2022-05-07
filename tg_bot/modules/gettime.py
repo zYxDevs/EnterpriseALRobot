@@ -2,8 +2,9 @@ import datetime
 from typing import List
 
 import requests
-from tg_bot import TIME_API_KEY, application
-from telegram import ParseMode, Update
+from tg_bot import TIME_API_KEY
+from telegram.constants import ParseMode
+from telegram import Update
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
@@ -48,7 +49,7 @@ def generate_time(to_find: str, findtype: List[str]) -> str:
             f"<b>Current Date:</b> <code>{current_date}</code>\n"
             '<b>Timezones:</b> <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">List here</a>'
         )
-    except:
+    except Exception:
         result = None
 
     return result
@@ -60,7 +61,7 @@ async def gettime(update: Update, context: CallbackContext):
 
     try:
         query = await message.text.strip().split(" ", 1)[1]
-    except:
+    except Exception:
         await message.reply_text(
             "Provide a country name/abbreviation/timezone to find."
         )

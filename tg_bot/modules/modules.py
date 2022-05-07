@@ -13,7 +13,8 @@ from tg_bot.__main__ import (
     USER_SETTINGS,
 )
 from tg_bot.modules.helper_funcs.chat_status import dev_plus, sudo_plus
-from telegram import ParseMode, Update
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
@@ -28,8 +29,8 @@ async def load(update: Update, context: CallbackContext):
     )
 
     try:
-        imported_module = importlib.import_module("tg_bot.modules." + text)
-    except:
+        imported_module = importlib.import_module(f"tg_bot.modules.{text}")
+    except Exception:
         load_messasge.edit_text("Does that module even exist?")
         return
 
@@ -79,9 +80,7 @@ async def load(update: Update, context: CallbackContext):
     if hasattr(imported_module, "__user_settings__"):
         USER_SETTINGS[imported_module.__mod_name__.lower()] = imported_module
 
-    load_messasge.edit_text(
-        "Successfully loaded module : <b>{}</b>".format(text), parse_mode=ParseMode.HTML
-    )
+    await load_messasge.edit_text(f"Successfully loaded module : <b>{text}</b>", parse_mode=ParseMode.HTML)
 
 
 @kigcmd(command="unload")
@@ -94,8 +93,8 @@ async def unload(update: Update, context: CallbackContext):
     )
 
     try:
-        imported_module = importlib.import_module("tg_bot.modules." + text)
-    except:
+        imported_module = importlib.import_module(f"tg_bot.modules.{text}")
+    except Exception:
         unload_messasge.edit_text("Does that module even exist?")
         return
 

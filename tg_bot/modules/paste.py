@@ -5,7 +5,7 @@ from tg_bot.modules.helper_funcs.decorators import kigcmd
 from io import BytesIO
 
 
-@kigcmd(command="paste", pass_args=True)
+@kigcmd(command="paste")
 async def paste(update: Update, context: CallbackContext):
     args = context.args
     message = update.effective_message

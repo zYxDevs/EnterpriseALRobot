@@ -1,9 +1,10 @@
 import json, time, os
 from io import BytesIO
-from telegram import ParseMode, Message
+from telegram import Message
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
 import tg_bot.modules.sql.notes_sql as sql
-from tg_bot import application, log as LOGGER, OWNER_ID
+from tg_bot import app as application, log as LOGGER, OWNER_ID
 from tg_bot.__main__ import DATA_IMPORT
 from tg_bot.modules.helper_funcs.alternate import typing_action
 from tg_bot.modules.helper_funcs.decorators import kigcmd
@@ -41,7 +42,7 @@ async def import_data(update, context):
     # TODO: allow uploading doc with command, not just as reply
     # only work with a doc
 
-    conn = connected(context.bot, update, chat, user.id, need_admin=True)
+    conn = await connected(context.bot, update, chat, user.id, need_admin=True)
     if conn:
         chat = await application.bot.getChat(conn)
         chat_name = await application.bot.getChat(conn).title
@@ -136,7 +137,7 @@ async def export_data(update, context):  # sourcery no-metrics
     chat_id = update.effective_chat.id
     chat = update.effective_chat
     current_chat_id = update.effective_chat.id
-    conn = connected(context.bot, update, chat, user.id, need_admin=True)
+    conn = await connected(context.bot, update, chat, user.id, need_admin=True)
     if conn:
         chat = await application.bot.getChat(conn)
         chat_id = conn

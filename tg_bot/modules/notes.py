@@ -1,3 +1,4 @@
+import asyncio
 import re, ast, random
 from io import BytesIO
 from typing import Optional
@@ -13,17 +14,16 @@ from telegram import (
     MAX_MESSAGE_LENGTH,
     InlineKeyboardMarkup,
     Message,
-    ParseMode,
     Update,
     InlineKeyboardButton,
 )
 from telegram.error import BadRequest
-from telegram.utils.helpers import escape_markdown, mention_markdown
+from telegram.helpers import escape_markdown, mention_markdown
 from telegram.ext import (
     CallbackContext,
-    Filters,
+    filters,
 )
-
+from telegram.constants import ParseMode
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg, kigcallback
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
@@ -51,8 +51,8 @@ ENUM_FUNC_MAP = {
 }
 
 
-# Do not async
-def get(update, context, notename, show_none=True, no_format=False):
+
+async def get(update, context, notename, show_none=True, no_format=False):
     # sourcery no-metrics
     bot = context.bot
     chat_id = update.effective_message.chat.id
@@ -111,45 +111,14 @@ def get(update, context, notename, show_none=True, no_format=False):
                 "chatname",
                 "mention",
             ]
-            valid_format = escape_invalid_curly_brackets(
-                note.value,
-                VALID_NOTE_FORMATTERS,
-            )
-            if valid_format:
+            if valid_format := escape_invalid_curly_brackets(note.value, VALID_NOTE_FORMATTERS,):
                 if not no_format and "%%%" in valid_format:
                     split = valid_format.split("%%%")
                     text = random.choice(split) if all(split) else valid_format
                 else:
                     text = valid_format
-                text = text.format(
-                    first=escape_markdown(message.from_user.first_name),
-                    last=escape_markdown(
-                        message.from_user.last_name or message.from_user.first_name,
-                    ),
-                    fullname=escape_markdown(
-                        " ".join(
-                            [message.from_user.first_name, message.from_user.last_name]
-                            if message.from_user.last_name
-                            else [message.from_user.first_name],
-                        ),
-                    ),
-                    username="@" + message.from_user.username
-                    if message.from_user.username
-                    else mention_markdown(
-                        message.from_user.id,
-                        message.from_user.first_name,
-                    ),
-                    mention=mention_markdown(
-                        message.from_user.id,
-                        message.from_user.first_name,
-                    ),
-                    chatname=escape_markdown(
-                        message.chat.title
-                        if message.chat.type != "private"
-                        else message.from_user.first_name,
-                    ),
-                    id=message.from_user.id,
-                )
+                text = text.format(first=escape_markdown(message.from_user.first_name), last=escape_markdown(message.from_user.last_name or message.from_user.first_name,), fullname=escape_markdown(" ".join([message.from_user.first_name, message.from_user.last_name] if message.from_user.last_name else [message.from_user.first_name],),), username=f"@{message.from_user.username}" if message.from_user.username else mention_markdown(message.from_user.id, message.from_user.first_name,), mention=mention_markdown(message.from_user.id, message.from_user.first_name,), chatname=escape_markdown(message.chat.title if message.chat.type != "private" else message.from_user.first_name,), id=message.from_user.id)
+
             else:
                 text = ""
 
@@ -205,10 +174,8 @@ def get(update, context, notename, show_none=True, no_format=False):
                     )
                     sql.rm_note(chat_id, notename)
                 else:
-                    await message.reply_text(
-                        "This note could not be sent, as it is incorrectly formatted. Ask in "
-                        f"@YorkTownEagleUnion if you can't figure out why!"
-                    )
+                    await message.reply_text("This note could not be sent, as it is incorrectly formatted. Ask in ")
+
                     log.exception(
                         "Could not parse message #%s in chat %s",
                         notename,
@@ -225,9 +192,9 @@ def get(update, context, notename, show_none=True, no_format=False):
 async def cmd_get(update: Update, context: CallbackContext):
     bot, args = context.bot, context.args
     if len(args) >= 2 and args[1].lower() == "noformat":
-        get(update, context, args[0].lower(), show_none=True, no_format=True)
+        await get(update, context, args[0].lower(), show_none=True, no_format=True)
     elif len(args) >= 1:
-        get(update, context, args[0].lower(), show_none=True)
+        await get(update, context, args[0].lower(), show_none=True)
     else:
         await update.effective_message.reply_text("Get rekt")
 
@@ -238,7 +205,7 @@ async def hash_get(update: Update, context: CallbackContext):
     message = update.effective_message.text
     fst_word = await message.split()[0]
     no_hash = fst_word[1:].lower()
-    get(update, context, no_hash, show_none=False)
+    await get(update, context, no_hash, show_none=False)
 
 
 @kigmsg((filters.Regex(r"^/\d+$")), group=-16)
@@ -251,7 +218,7 @@ async def slash_get(update: Update, context: CallbackContext):
     try:
         noteid = note_list[int(no_slash) - 1]
         note_name = str(noteid).strip(">").split()[1]
-        get(update, context, note_name, show_none=False)
+        await get(update, context, note_name, show_none=False)
     except IndexError:
         await update.effective_message.reply_text("Wrong Note ID 😾")
 
@@ -500,14 +467,14 @@ def __import_data__(chat_id, data):  # sourcery no-metrics
     if failures:
         with BytesIO(str.encode("\n".join(failures))) as output:
             output.name = "failed_imports.txt"
-            await application.bot.send_document(
+            asyncio.get_running_loop().run_until_complete(application.bot.send_document(
                 chat_id,
                 document=output,
                 filename="failed_imports.txt",
                 caption="These files/photos failed to import due to originating "
                 "from another bot. This is a telegram API restriction, and can't "
                 "be avoided. Sorry for the inconvenience!",
-            )
+            ))
 
 
 def __stats__():

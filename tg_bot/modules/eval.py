@@ -5,10 +5,10 @@ import os
 import textwrap
 import traceback
 from contextlib import redirect_stdout
-
+from telegram.constants import ParseMode
 from tg_bot import log as LOGGER, SYS_ADMIN
-from telegram import ParseMode, Update
-from telegram.ext import Filters, CallbackContext
+from telegram import Update
+from telegram.ext import filters, CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
 namespaces = {}
@@ -34,7 +34,7 @@ def log_input(update):
     LOGGER.info(f"IN: {update.effective_message.text} (user={user}, chat={chat})")
 
 
-def send(msg, bot, update):
+async def send(msg, bot, update):
     if len(str(msg)) > 2000:
         with io.BytesIO(str.encode(msg)) as out_file:
             out_file.name = "output.txt"
@@ -51,13 +51,13 @@ def send(msg, bot, update):
 @kigcmd(command=("e", "ev", "eva", "eval"), filters=filters.User(SYS_ADMIN))
 async def evaluate(update: Update, context: CallbackContext):
     bot = context.bot
-    send(do(eval, bot, update), bot, update)
+    await send((await do(eval, bot, update)), bot, update)
 
 
 @kigcmd(command=("x", "ex", "exe", "exec", "py"), filters=filters.User(SYS_ADMIN))
 async def execute(update: Update, context: CallbackContext):
     bot = context.bot
-    send(do(exec, bot, update), bot, update)
+    await send((await do(exec, bot, update)), bot, update)
 
 
 def cleanup_code(code):
@@ -66,7 +66,7 @@ def cleanup_code(code):
     return code.strip("` \n")
 
 
-def do(func, bot, update):
+async def do(func, bot, update):
     log_input(update)
     content = await update.message.text.split(" ", 1)[-1]
     body = cleanup_code(content)
@@ -120,7 +120,7 @@ async def clear(update: Update, context: CallbackContext):
     global namespaces
     if update.message.chat_id in namespaces:
         del namespaces[update.message.chat_id]
-    send("Cleared locals.", bot, update)
+    await send("Cleared locals.", bot, update)
 
 
 __mod_name__ = "Eval Module"

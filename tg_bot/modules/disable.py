@@ -1,11 +1,11 @@
 from typing import Union
 
 from future.utils import string_types
-from telegram import ParseMode, Update, Chat
+from telegram import Update, Chat
+from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, MessageHandler
-from telegram.utils.helpers import escape_markdown
-
-from tg_bot import application
+from telegram.helpers import escape_markdown
+from ..import app as application
 from tg_bot.modules.helper_funcs.handlers import CMD_STARTERS
 from tg_bot.modules.helper_funcs.misc import is_module_loaded
 from tg_bot.modules.helper_funcs.alternate import send_message, typing_action
@@ -37,7 +37,7 @@ if is_module_loaded(FILENAME):
 
     class DisableAbleCommandHandler(CommandHandler):
         def __init__(self, command, callback, block=False, admin_ok=False, **kwargs):
-            super().__init__(command, callback, run_async=run_async, **kwargs)
+            super().__init__(command, callback, **kwargs)
             self.admin_ok = admin_ok
             if isinstance(command, string_types):
                 DISABLE_CMDS.append(command)
@@ -48,48 +48,43 @@ if is_module_loaded(FILENAME):
                 if admin_ok:
                     ADMIN_CMDS.extend(command)
 
-        def check_update(self, update):
+        async def check_update(self, update):
             if not isinstance(update, Update) or not update.effective_message:
                 return
             message = update.effective_message
 
             if message.text and len(message.text) > 1:
-                fst_word = await message.text.split(None, 1)[0]
+                fst_word = message.text.split(None, 1)[0]
                 if len(fst_word) > 1 and any(
                     fst_word.startswith(start) for start in CMD_STARTERS
                 ):
-                    args = await message.text.split()[1:]
+                    args = message.text.split()[1:]
                     command = fst_word[1:].split("@")
                     command.append(message.bot.username)
 
                     if not (
                         command[0].lower() in self.command
-                        and command[1].lower() == await message.bot.username.lower()
+                        and command[1].lower() == message.bot.username.lower()
                     ):
                         return None
 
-                    filter_result = self.filters(update)
-                    if filter_result:
+                    if filter_result := self.filters(update):
                         chat = update.effective_chat
                         user = update.effective_user
                         # disabled, admincmd, user admin
                         if sql.is_command_disabled(chat.id, command[0].lower()):
                             # check if command was disabled
-                            is_disabled = command[0] in ADMIN_CMDS and is_user_admin(
+                            is_disabled = command[0] in ADMIN_CMDS and (await is_user_admin(
                                 update, user.id
-                            )
-                            if not is_disabled:
-                                return None
-                            else:
-                                return args, filter_result
-
+                            ))
+                            return (args, filter_result) if is_disabled else None
                         return args, filter_result
                     else:
                         return False
 
     class DisableAbleMessageHandler(MessageHandler):
         def __init__(self, pattern, callback, block=False, friendly="", **kwargs):
-            super().__init__(pattern, callback, run_async=run_async, **kwargs)
+            super().__init__(pattern, callback, **kwargs)
             DISABLE_OTHER.append(friendly or pattern)
             self.friendly = friendly or pattern
 
@@ -107,7 +102,7 @@ if is_module_loaded(FILENAME):
         user = update.effective_user
         args = context.args
 
-        conn = connected(context.bot, update, chat, user.id, need_admin=True)
+        conn = await connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
             chat = await application.bot.getChat(conn)
             chat_name = await application.bot.getChat(conn).title
@@ -129,11 +124,9 @@ if is_module_loaded(FILENAME):
             if disable_cmd in set(DISABLE_CMDS + DISABLE_OTHER):
                 sql.disable_command(chat.id, disable_cmd)
                 if conn:
-                    text = "Disabled the use of `{}` command in *{}*!".format(
-                        disable_cmd, chat_name
-                    )
+                    text = f"Disabled the use of `{disable_cmd}` command in *{chat_name}*!"
                 else:
-                    text = "Disabled the use of `{}` command!".format(disable_cmd)
+                    text = f"Disabled the use of `{disable_cmd}` command!"
                 send_message(
                     update.effective_message,
                     text,
@@ -152,7 +145,7 @@ if is_module_loaded(FILENAME):
         user = update.effective_user
         args = context.args
 
-        conn = connected(context.bot, update, chat, user.id, need_admin=True)
+        conn = await connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
             chat = await application.bot.getChat(conn)
             chat_id = conn
@@ -220,7 +213,7 @@ if is_module_loaded(FILENAME):
     async def commands(update, context):
         chat = update.effective_chat
         user = update.effective_user
-        conn = connected(context.bot, update, chat, user.id, need_admin=True)
+        conn = await connected(context.bot, update, chat, user.id, need_admin=True)
         if conn:
             chat = await application.bot.getChat(conn)
             chat_id = conn
@@ -271,10 +264,10 @@ It'll also allow you to autodelete them, stopping people from bluetexting.
     """
 
     DISABLE_HANDLER = CommandHandler(
-        "disable", disable, pass_args=True
+        "disable", disable
     )  # , filters=filters.ChatType.GROUPS)
     ENABLE_HANDLER = CommandHandler(
-        "enable", enable, pass_args=True
+        "enable", enable
     )  # , filters=filters.ChatType.GROUPS)
     COMMANDS_HANDLER = CommandHandler(
         ["cmds", "disabled"], commands

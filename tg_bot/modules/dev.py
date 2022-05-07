@@ -4,14 +4,14 @@ import re
 import subprocess
 import sys
 from time import sleep
-
-from telegram.ext.callbackqueryhandler import CallbackQueryHandler
-from tg_bot import DEV_USERS, application, telethn, OWNER_ID
+from ..import app as application
+from telegram.ext import CallbackQueryHandler
+from tg_bot import DEV_USERS, app as application, telethn, OWNER_ID
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
+from telegram.constants import ParseMode
 from telegram import (
-    TelegramError,
+    # TelegramError,
     Update,
-    ParseMode,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
@@ -20,13 +20,12 @@ import asyncio
 from statistics import mean
 from time import monotonic as time
 from telethon import events
-
+from telegram.error import TelegramError
 
 @dev_plus
 async def leave(update: Update, context: CallbackContext):
     bot = context.bot
-    args = context.args
-    if args:
+    if args := context.args:
         chat_id = str(args[0])
         leave_msg = " ".join(args[1:])
         try:
@@ -40,20 +39,9 @@ async def leave(update: Update, context: CallbackContext):
     else:
         chat = update.effective_chat
         # user = update.effective_user
-        kb = [
-            [
-                InlineKeyboardButton(
-                    text="I am sure of this action.",
-                    callback_data="leavechat_cb_({})".format(chat.id),
-                )
-            ]
-        ]
-        await update.effective_message.reply_text(
-            "I'm going to leave {}, press the button below to confirm".format(
-                chat.title
-            ),
-            reply_markup=InlineKeyboardMarkup(kb),
-        )
+        kb = [[InlineKeyboardButton(text="I am sure of this action.", callback_data=f"leavechat_cb_({chat.id})")]]
+
+        await update.effective_message.reply_text(f"I'm going to leave {chat.title}, press the button below to confirm", reply_markup=InlineKeyboardMarkup(kb))
 
 
 async def leave_cb(update: Update, context: CallbackContext):
@@ -152,7 +140,7 @@ async def pip_install(update: Update, context: CallbackContext):
         await message.reply_text("Enter a package name.")
         return
     if len(args) >= 1:
-        cmd = "py -m pip install {}".format(" ".join(args))
+        cmd = f'py -m pip install {" ".join(args)}'
         process = subprocess.Popen(
             cmd.split(" "),
             stdout=subprocess.PIPE,
@@ -162,8 +150,7 @@ async def pip_install(update: Update, context: CallbackContext):
         stdout, stderr = process.communicate()
         reply = ""
         stderr = stderr.decode()
-        stdout = stdout.decode()
-        if stdout:
+        if stdout := stdout.decode():
             reply += f"*Stdout*\n`{stdout}`\n"
         if stderr:
             reply += f"*Stderr*\n`{stderr}`\n"
@@ -180,8 +167,8 @@ async def get_chat_by_id(update: Update, context: CallbackContext):
         return
     if len(args) >= 1:
         data = await context.bot.get_chat(args[0])
-        m = "<b>Found chat, below are the details.</b>\n\n"
-        m += "<b>Title</b>: {}\n".format(html.escape(data.title))
+        m = "<b>Found chat, below are the details.</b>\n\n" + "<b>Title</b>: {}\n".format(html.escape(data.title))
+
         m += "<b>Members</b>: {}\n\n".format(data.get_member_count())
         if data.description:
             m += "<i>{}</i>\n\n".format(html.escape(data.description))

@@ -1,3 +1,4 @@
+import asyncio
 from typing import List, Optional, Tuple
 
 from tg_bot import log
@@ -11,7 +12,7 @@ def id_from_reply(message):
     if not prev_message:
         return None, None
     user_id = prev_message.from_user.id
-    res = await message.text.split(None, 1)
+    res = message.text.split(None, 1)
     if prev_message.sender_chat:
         user_id = prev_message.sender_chat.id
     if len(res) < 2:
@@ -20,14 +21,14 @@ def id_from_reply(message):
 
 
 def extract_user(message: Message, args: List[str]) -> Optional[int]:
-    return extract_user_and_text(message, args)[0]
+    return asyncio.get_running_loop().run_until_complete(extract_user_and_text(message, args)[0])
 
 
-def extract_user_and_text(
+async def extract_user_and_text(
     message: Message, args: List[str]
 ) -> Tuple[Optional[int], Optional[str]]:
     prev_message = message.reply_to_message
-    split_text = await message.text.split(None, 1)
+    split_text = message.text.split(None, 1)
 
     if len(split_text) < 2:
         return id_from_reply(message)  # only option possible
@@ -46,7 +47,7 @@ def extract_user_and_text(
 
     elif len(args) >= 1 and args[0][0] == "@":
         user = args[0]
-        user_id = get_user_id(user)
+        user_id = await get_user_id(user)
         if not user_id:
             await message.reply_text(
                 "No idea who this user is. You'll be able to interact with them if "
@@ -97,7 +98,7 @@ def extract_text(message) -> str:
     )
 
 
-def extract_unt_fedban(
+async def extract_unt_fedban(
     message: Message, args: List[str]
 ) -> Tuple[Optional[int], Optional[str]]:  # sourcery no-metrics
     prev_message = message.reply_to_message
@@ -120,7 +121,7 @@ def extract_unt_fedban(
 
     elif len(args) >= 1 and args[0][0] == "@":
         user = args[0]
-        user_id = get_user_id(user)
+        user_id = await get_user_id(user)
         if not user_id and not isinstance(user_id, int):
             await message.reply_text(
                 "I don't have users on my DB.You will be able to interact with them if "

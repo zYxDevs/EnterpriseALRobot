@@ -5,11 +5,10 @@ from datetime import datetime
 from platform import python_version
 from typing import List
 from uuid import uuid4
-
+from telegram.constants import ParseMode
 import requests
 from telegram import (
     InlineQueryResultArticle,
-    ParseMode,
     InputTextMessageContent,
     Update,
     InlineKeyboardMarkup,
@@ -18,7 +17,7 @@ from telegram import (
 from telegram import __version__
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
+from telegram.helpers import mention_html
 
 import tg_bot.modules.sql.users_sql as sql
 from tg_bot import (
@@ -115,7 +114,7 @@ async def inlinequery(update: Update, _) -> None:
         await update.inline_query.answer(results, cache_time=5)
 
 
-def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
+async def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
     """Handle the inline query."""
     bot = context.bot
     query = update.inline_query.query
@@ -211,7 +210,7 @@ def inlineinfo(query: str, update: Update, context: CallbackContext) -> None:
     await update.inline_query.answer(results, cache_time=5)
 
 
-def about(query: str, update: Update, context: CallbackContext) -> None:
+async def about(query: str, update: Update, context: CallbackContext) -> None:
     """Handle the inline query."""
     query = update.inline_query.query
     user_id = update.effective_user.id
@@ -293,7 +292,7 @@ MEDIA_QUERY = """query ($search: String) {
 }"""
 
 
-def media_query(query: str, update: Update, context: CallbackContext) -> None:
+async def media_query(query: str, update: Update, context: CallbackContext) -> None:
     # sourcery skip: avoid-builtin-shadow
     """
     Handle anime inline query.

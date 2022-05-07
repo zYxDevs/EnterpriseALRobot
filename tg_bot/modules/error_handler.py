@@ -5,7 +5,9 @@ from .helper_funcs.misc import upload_text
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CallbackContext, CommandHandler
 from psycopg2 import errors as sqlerrors
-from tg_bot import KInit, application, DEV_USERS, OWNER_ID, log
+from tg_bot import KInit, DEV_USERS, OWNER_ID, log
+from tg_bot.__init__ import app as application
+
 
 
 class ErrorsDict(dict):

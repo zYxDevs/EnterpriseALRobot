@@ -3,19 +3,19 @@ from io import BytesIO
 from time import sleep
 
 import tg_bot.modules.sql.users_sql as sql
-from tg_bot import DEV_USERS, log, OWNER_ID, application
+from tg_bot import DEV_USERS, log, OWNER_ID, app as application
 from tg_bot.modules.helper_funcs.chat_status import dev_plus, sudo_plus
 from tg_bot.modules.sql.users_sql import get_all_users
-from telegram import TelegramError, Update
-from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler
+from telegram import Update
+from telegram.error import BadRequest, TelegramError
+from telegram.ext import CallbackContext, CommandHandler, filters, MessageHandler
 
 USERS_GROUP = 4
 CHAT_GROUP = 5
 DEV_AND_MORE = DEV_USERS.append(int(OWNER_ID))
 
 
-def get_user_id(username):
+async def get_user_id(username):
     # ensure valid userid
     if len(username) <= 5:
         return None
@@ -158,7 +158,7 @@ async def chats(update: Update, context: CallbackContext):
                 P, chat.chat_name, chat.chat_id, chat_members
             )
             P += 1
-        except:
+        except Exception:
             pass
 
     with BytesIO(str.encode(chatfile)) as output:

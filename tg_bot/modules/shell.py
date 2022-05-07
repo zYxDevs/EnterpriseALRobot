@@ -1,10 +1,10 @@
 import subprocess
 
 from tg_bot import log as LOGGER, SYS_ADMIN
-from telegram import ParseMode, Update
-from telegram.ext import Filters, CallbackContext
+from telegram import Update
+from telegram.ext import filters, CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
-
+from telegram.constants import ParseMode
 
 @kigcmd(command="sh", filters=filters.User(SYS_ADMIN))
 async def shell(update: Update, context: CallbackContext):
@@ -23,8 +23,7 @@ async def shell(update: Update, context: CallbackContext):
     stdout, stderr = process.communicate()
     reply = ""
     stderr = stderr.decode()
-    stdout = stdout.decode()
-    if stdout:
+    if stdout := stdout.decode():
         reply += f"*Stdout*\n`{stdout}`\n"
         LOGGER.info(f"Shell - {cmd} - {stdout}")
     if stderr:

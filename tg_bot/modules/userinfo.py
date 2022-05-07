@@ -1,16 +1,16 @@
 import html
 
-from telegram import Update, ParseMode, MAX_MESSAGE_LENGTH
-from telegram.ext.application import CallbackContext
-from telegram.utils.helpers import escape_markdown
-
+from telegram import Update, MAX_MESSAGE_LENGTH
+from telegram.ext import CallbackContext
+from telegram.helpers import escape_markdown
+from telegram.constants import ParseMode
 import tg_bot.modules.sql.userinfo_sql as sql
 from tg_bot import SUDO_USERS, DEV_USERS
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 from tg_bot.modules.helper_funcs.extraction import extract_user
 
 
-@kigcmd(command="me", pass_args=True)
+@kigcmd(command="me")
 async def about_me(update: Update, context: CallbackContext):
     args = context.args
     bot = context.bot
@@ -18,9 +18,7 @@ async def about_me(update: Update, context: CallbackContext):
     user_id = extract_user(message, args)
 
     user = await bot.get_chat(user_id) if user_id else message.from_user
-    info = sql.get_user_me_info(user.id)
-
-    if info:
+    if info := sql.get_user_me_info(user.id):
         await update.effective_message.reply_text(
             f"*{user.first_name}*:\n{escape_markdown(info)}",
             parse_mode=ParseMode.MARKDOWN,
@@ -61,14 +59,10 @@ async def set_about_me(update: Update, context: CallbackContext):
             else:
                 await message.reply_text("Updated your info!")
         else:
-            await message.reply_text(
-                "The info needs to be under {} characters! You have {}.".format(
-                    MAX_MESSAGE_LENGTH // 4, len(info[1])
-                )
-            )
+            await message.reply_text(f"The info needs to be under {MAX_MESSAGE_LENGTH // 4} characters! You have {len(info[1])}.")
 
 
-@kigcmd(command="bio", pass_args=True)
+@kigcmd(command="bio")
 async def about_bio(update: Update, context: CallbackContext):
     args = context.args
     bot = context.bot
@@ -76,9 +70,7 @@ async def about_bio(update: Update, context: CallbackContext):
 
     user_id = extract_user(message, args)
     user = await bot.get_chat(user_id) if user_id else message.from_user
-    info = sql.get_user_bio(user.id)
-
-    if info:
+    if info := sql.get_user_bio(user.id):
         await update.effective_message.reply_text(
             "*{}*:\n{}".format(user.first_name, escape_markdown(info)),
             parse_mode=ParseMode.MARKDOWN,
@@ -122,15 +114,10 @@ async def about_bio(update: Update, context: CallbackContext):
         if len(bio) == 2:
             if len(bio[1]) < MAX_MESSAGE_LENGTH // 4:
                 sql.set_user_bio(user_id, bio[1])
-                await message.reply_text(
-                    "Updated {}'s bio!".format(repl_message.from_user.first_name)
-                )
+                await message.reply_text(f"Updated {repl_message.from_user.first_name}'s bio!")
             else:
-                await message.reply_text(
-                    "A bio needs to be under {} characters! You tried to set {}.".format(
-                        MAX_MESSAGE_LENGTH // 4, len(bio[1])
-                    )
-                )
+                await message.reply_text(f"A bio needs to be under {MAX_MESSAGE_LENGTH // 4} characters! You tried to set {len(bio[1])}.")
+
     else:
         await message.reply_text("Reply to someone's message to set their bio!")
 
@@ -172,15 +159,10 @@ async def set_about_bio(update: Update, context: CallbackContext):
         if len(bio) == 2:
             if len(bio[1]) < MAX_MESSAGE_LENGTH // 4:
                 sql.set_user_bio(user_id, bio[1])
-                await message.reply_text(
-                    "Updated {}'s bio!".format(repl_message.from_user.first_name)
-                )
+                await message.reply_text(f"Updated {repl_message.from_user.first_name}'s bio!")
             else:
-                await message.reply_text(
-                    "Bio needs to be under {} characters! You tried to set {}.".format(
-                        MAX_MESSAGE_LENGTH // 4, len(bio[1])
-                    )
-                )
+                await message.reply_text(f"Bio needs to be under {MAX_MESSAGE_LENGTH // 4} characters! You tried to set {len(bio[1])}.")
+
     else:
         await message.reply_text("Reply to someone to set their bio!")
 

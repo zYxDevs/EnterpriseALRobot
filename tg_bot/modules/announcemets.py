@@ -1,12 +1,12 @@
 import html
 from typing import Optional
-
-from telegram import Update, ParseMode
+from telegram.constants import ParseMode
+from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.chatmemberupdated import ChatMemberUpdated
-from telegram.ext.chatmemberhandler import ChatMemberHandler
+from telegram import ChatMemberUpdated
+from telegram.ext import ChatMemberHandler
 import tg_bot.modules.sql.log_channel_sql as logsql
-from tg_bot import application
+from tg_bot import app as application
 from tg_bot.modules.log_channel import loggable
 
 import tg_bot.modules.sql.logger_sql as sql

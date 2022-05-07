@@ -6,7 +6,8 @@ import urllib.request
 import urllib.parse
 
 import telegram
-from telegram import ParseMode, Update, ChatPermissions
+from telegram.constants import ParseMode
+from telegram import Update, ChatPermissions
 from telegram.ext import CallbackContext
 
 import tg_bot.modules.fun_strings as fun_strings
@@ -33,11 +34,8 @@ async def slap(update: Update, context: CallbackContext):
         else message.reply_text
     )
 
-    curr_user = (
-        html.escape(message.from_user.first_name)
-        if not message.sender_chat
-        else html.escape(message.sender_chat.title)
-    )
+    curr_user = html.escape(message.sender_chat.title) if message.sender_chat else html.escape(message.from_user.first_name)
+
     user_id = extract_user(message, args)
 
     if user_id == bot.id:
@@ -45,7 +43,7 @@ async def slap(update: Update, context: CallbackContext):
 
         if isinstance(temp, list):
             if temp[2] == "tmute":
-                if is_user_admin(update, message.from_user.id):
+                if (await is_user_admin(update, message.from_user.id)):
                     reply_text(temp[1])
                     return
 
@@ -65,9 +63,7 @@ async def slap(update: Update, context: CallbackContext):
 
         slapped_user = await bot.get_chat(user_id)
         user1 = curr_user
-        user2 = html.escape(
-            slapped_user.first_name if slapped_user.first_name else slapped_user.title
-        )
+        user2 = html.escape(slapped_user.first_name or slapped_user.title)
 
     else:
         user1 = bot.first_name

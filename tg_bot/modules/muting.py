@@ -1,3 +1,4 @@
+import contextlib
 import html
 from typing import Optional
 
@@ -11,17 +12,18 @@ from tg_bot.modules.helper_funcs.chat_status import (
 from tg_bot.modules.helper_funcs.extraction import extract_user_and_text
 from tg_bot.modules.helper_funcs.string_handling import extract_time
 from tg_bot.modules.log_channel import loggable
-from telegram import Bot, Chat, ChatPermissions, ParseMode, Update
+from telegram import Bot, Chat, ChatPermissions, Update
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
+from telegram.helpers import mention_html
 from tg_bot.modules.language import gs
 from tg_bot.modules.helper_funcs.decorators import kigcmd
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
 
-def check_user(user_id: int, bot: Bot, update: Update) -> Optional[str]:
+async def check_user(user_id: int, bot: Bot, update: Update) -> Optional[str]:
     if not user_id:
         return "You don't seem to be referring to a user or the ID specified is incorrect.."
 
@@ -35,7 +37,7 @@ def check_user(user_id: int, bot: Bot, update: Update) -> Optional[str]:
     if user_id == bot.id:
         return "I'm not gonna MUTE myself, How high are you?"
 
-    if is_user_admin(update, user_id, member) or user_id in SARDEGNA_USERS:
+    if (await is_user_admin(update, user_id, member)) or user_id in SARDEGNA_USERS:
         return "Can't. Find someone else to mute but not this one."
 
     return None
@@ -55,8 +57,8 @@ async def mute(update: Update, context: CallbackContext) -> str:
     user = update.effective_user
     message = update.effective_message
 
-    user_id, reason = extract_user_and_text(message, args)
-    reply = check_user(user_id, bot, update)
+    user_id, reason = await extract_user_and_text(message, args)
+    reply = await check_user(user_id, bot, update)
 
     if reply:
         await message.reply_text(reply)
@@ -107,7 +109,7 @@ async def unmute(update: Update, context: CallbackContext) -> str:
     user = update.effective_user
     message = update.effective_message
 
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
     if not user_id:
         await message.reply_text(
             "You'll need to either give me a username to unmute, or reply to someone to be unmuted."
@@ -140,10 +142,8 @@ async def unmute(update: Update, context: CallbackContext) -> str:
             can_send_other_messages=True,
             can_add_web_page_previews=True,
         )
-        try:
+        with contextlib.suppress(BadRequest):
             await bot.restrict_chat_member(chat.id, int(user_id), chat_permissions)
-        except BadRequest:
-            pass
         await bot.sendMessage(
             chat.id,
             "{} was unmuted by {} in <b>{}</b>\n<b>Reason</b>: <code>{}</code>".format(
@@ -175,8 +175,8 @@ async def temp_mute(update: Update, context: CallbackContext) -> str:
     user = update.effective_user
     message = update.effective_message
 
-    user_id, reason = extract_user_and_text(message, args)
-    reply = check_user(user_id, bot, update)
+    user_id, reason = await extract_user_and_text(message, args)
+    reply = await check_user(user_id, bot, update)
 
     if reply:
         await message.reply_text(reply)
@@ -192,7 +192,7 @@ async def temp_mute(update: Update, context: CallbackContext) -> str:
 
     time_val = split_reason[0].lower()
     reason = split_reason[1] if len(split_reason) > 1 else ""
-    mutetime = extract_time(message, time_val)
+    mutetime = await extract_time(message, time_val)
 
     if not mutetime:
         return ""

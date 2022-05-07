@@ -1,6 +1,7 @@
-from telegram import ParseMode, Update
+from telegram import Update
 from telegram.ext import CallbackContext
 from tg_bot.modules.helper_funcs.decorators import kigcmd
+from telegram.constants import ParseMode
 
 normiefont = [
     "a",

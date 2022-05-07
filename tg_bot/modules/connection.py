@@ -1,15 +1,15 @@
 import time
 import re
-
-from telegram import ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, Update, Bot
-from telegram.error import BadRequest, Unauthorized
+from telegram.constants import ParseMode
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update, Bot
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
 )
 
 import tg_bot.modules.sql.connection_sql as sql
-from tg_bot import application, SUDO_USERS, DEV_USERS
+from tg_bot import app as application, SUDO_USERS, DEV_USERS
 from tg_bot.modules.helper_funcs import chat_status
 from tg_bot.modules.helper_funcs.alternate import send_message, typing_action
 
@@ -23,44 +23,42 @@ async def allow_connections(update, context) -> str:
     chat = update.effective_chat
     args = context.args
 
-    if chat.type != chat.PRIVATE:
-        if len(args) >= 1:
-            var = args[0]
-            if var == "no":
-                sql.set_allow_connect_to_chat(chat.id, False)
-                send_message(
-                    update.effective_message,
-                    "Connection has been disabled for this chat",
-                )
-            elif var == "yes":
-                sql.set_allow_connect_to_chat(chat.id, True)
-                send_message(
-                    update.effective_message,
-                    "Connection has been enabled for this chat",
-                )
-            else:
-                send_message(
-                    update.effective_message,
-                    "Please enter `yes` or `no`!",
-                    parse_mode=ParseMode.MARKDOWN,
-                )
-        else:
-            get_settings = sql.allow_connect_to_chat(chat.id)
-            if get_settings:
-                send_message(
-                    update.effective_message,
-                    "Connections to this group are *Allowed* for members!",
-                    parse_mode=ParseMode.MARKDOWN,
-                )
-            else:
-                send_message(
-                    update.effective_message,
-                    "Connection to this group are *Not Allowed* for members!",
-                    parse_mode=ParseMode.MARKDOWN,
-                )
-    else:
+    if chat.type == chat.PRIVATE:
         send_message(
             update.effective_message, "This command is for group only. Not in PM!"
+        )
+
+    elif len(args) >= 1:
+        var = args[0]
+        if var == "no":
+            sql.set_allow_connect_to_chat(chat.id, False)
+            send_message(
+                update.effective_message,
+                "Connection has been disabled for this chat",
+            )
+        elif var == "yes":
+            sql.set_allow_connect_to_chat(chat.id, True)
+            send_message(
+                update.effective_message,
+                "Connection has been enabled for this chat",
+            )
+        else:
+            send_message(
+                update.effective_message,
+                "Please enter `yes` or `no`!",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+    elif get_settings := sql.allow_connect_to_chat(chat.id):
+        send_message(
+            update.effective_message,
+            "Connections to this group are *Allowed* for members!",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+    else:
+        send_message(
+            update.effective_message,
+            "Connection to this group are *Not Allowed* for members!",
+            parse_mode=ParseMode.MARKDOWN,
         )
 
 
@@ -127,7 +125,7 @@ async def connect_chat(update, context):  # sourcery no-metrics
                 )
                 if connection_status:
                     conn_chat = await application.bot.getChat(
-                        connected(context.bot, update, chat, user.id, need_admin=False)
+                        await connected(context.bot, update, chat, user.id, need_admin=False)
                     )
                     chat_name = conn_chat.title
                     send_message(
@@ -157,7 +155,7 @@ async def connect_chat(update, context):  # sourcery no-metrics
                 ]
             else:
                 buttons = []
-            conn = connected(context.bot, update, chat, user.id, need_admin=False)
+            conn = await connected(context.bot, update, chat, user.id, need_admin=False)
             if conn:
                 connectedchat = await application.bot.getChat(conn)
                 text = "You are currently connected to *{}* (`{}`)".format(
@@ -238,7 +236,7 @@ async def connect_chat(update, context):  # sourcery no-metrics
                     )
                 except BadRequest:
                     pass
-                except Unauthorized:
+                except Forbidden:
                     pass
             else:
                 send_message(update.effective_message, "Connection failed!")
@@ -262,7 +260,7 @@ async def disconnect_chat(update, context):
         send_message(update.effective_message, "This command is only available in PM.")
 
 
-def connected(bot: Bot, update: Update, chat, user_id, need_admin=True):
+async def connected(bot: Bot, update: Update, chat, user_id, need_admin=True):
     user = update.effective_user
 
     if chat.type == chat.PRIVATE and sql.get_connected_chat(user_id):
@@ -353,7 +351,7 @@ async def connect_button(update, context):
 
             if connection_status:
                 conn_chat = await application.bot.getChat(
-                    connected(context.bot, update, chat, user.id, need_admin=False)
+                    await connected(context.bot, update, chat, user.id, need_admin=False)
                 )
                 chat_name = conn_chat.title
                 await query.message.edit_text(
@@ -395,11 +393,11 @@ def get_help(chat):
     return gs(chat, "connections_help")
 
 
-CONNECT_CHAT_HANDLER = CommandHandler("connect", connect_chat, pass_args=True)
+CONNECT_CHAT_HANDLER = CommandHandler("connect", connect_chat)
 CONNECTION_CHAT_HANDLER = CommandHandler("connection", connection_chat, block=False)
 DISCONNECT_CHAT_HANDLER = CommandHandler("disconnect", disconnect_chat, block=False)
 ALLOW_CONNECTIONS_HANDLER = CommandHandler(
-    "allowconnect", allow_connections, pass_args=True, block=False
+    "allowconnect", allow_connections, block=False
 )
 HELP_CONNECT_CHAT_HANDLER = CommandHandler(
     "helpconnect", help_connect_chat, block=False

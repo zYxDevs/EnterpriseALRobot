@@ -1,8 +1,9 @@
 import speedtest
-from tg_bot import DEV_USERS, application
+from tg_bot import DEV_USERS
 from tg_bot.modules.helper_funcs.chat_status import dev_plus
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
+from telegram.constants import ParseMode
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigcallback
 
 

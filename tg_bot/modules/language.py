@@ -1,10 +1,10 @@
-from typing import Union, List, Dict, Callable, Generator, Any
+from typing import Union, List, Generator
 import itertools
 from collections.abc import Iterable
 from telegram.ext import CommandHandler, CallbackQueryHandler
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 
-from tg_bot import application
+from tg_bot import app as application
 import tg_bot.modules.sql.language_sql as sql
 from tg_bot.modules.helper_funcs.chat_status import user_admin, user_admin_no_reply
 from tg_bot.langs import get_string, get_languages, get_language

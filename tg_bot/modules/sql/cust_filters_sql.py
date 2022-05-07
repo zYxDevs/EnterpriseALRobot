@@ -1,3 +1,4 @@
+import contextlib
 import threading
 
 from sqlalchemy import Column, String, UnicodeText, Boolean, Integer, distinct, func
@@ -66,11 +67,7 @@ class CustomFilters(BASE):
         return "<Permissions for %s>" % self.chat_id
 
     def __eq__(self, other):
-        return bool(
-            isinstance(other, CustomFilters)
-            and self.chat_id == other.chat_id
-            and self.keyword == other.keyword
-        )
+        return isinstance(other, CustomFilters) and self.chat_id == other.chat_id and self.keyword == other.keyword
 
 
 class NewCustomFilters(BASE):
@@ -116,7 +113,7 @@ class Buttons(BASE):
         self.same_line = same_line
 
 
-Customfilters.Table.Create(checkfirst=True)
+CustomFilters.__table__.create(checkfirst=True)
 Buttons.__table__.create(checkfirst=True)
 
 CUST_FILT_LOCK = threading.RLock()
@@ -149,8 +146,7 @@ def add_filter(
         buttons = []
 
     with CUST_FILT_LOCK:
-        prev = SESSION.query(CustomFilters).get((str(chat_id), keyword))
-        if prev:
+        if prev := SESSION.query(CustomFilters).get((str(chat_id), keyword)):
             with BUTTON_LOCK:
                 prev_buttons = (
                     SESSION.query(Buttons)
@@ -194,8 +190,7 @@ def new_add_filter(chat_id, keyword, reply_text, file_type, file_id, buttons):
         buttons = []
 
     with CUST_FILT_LOCK:
-        prev = SESSION.query(CustomFilters).get((str(chat_id), keyword))
-        if prev:
+        if prev := SESSION.query(CustomFilters).get((str(chat_id), keyword)):
             with BUTTON_LOCK:
                 prev_buttons = (
                     SESSION.query(Buttons)
@@ -238,8 +233,7 @@ def new_add_filter(chat_id, keyword, reply_text, file_type, file_id, buttons):
 def remove_filter(chat_id, keyword):
     global CHAT_FILTERS
     with CUST_FILT_LOCK:
-        filt = SESSION.query(CustomFilters).get((str(chat_id), keyword))
-        if filt:
+        if filt := SESSION.query(CustomFilters).get((str(chat_id), keyword)):
             if keyword in CHAT_FILTERS.get(str(chat_id), []):  # Sanity check
                 CHAT_FILTERS.get(str(chat_id), []).remove(keyword)
 
@@ -268,9 +262,9 @@ def get_chat_filters(chat_id):
     try:
         return (
             SESSION.query(CustomFilters)
-            .filter(Customfilters.CHAT_ID == str(chat_id))
-            .order_by(func.length(Customfilters.KEYWORD).desc())
-            .order_by(Customfilters.Keyword.Asc())
+            .filter(CustomFilters.chat_id == str(chat_id))
+            .order_by(func.length(CustomFilters.keyword).desc())
+            .order_by(CustomFilters.keyword.Asc())
             .all()
         )
     finally:
@@ -312,7 +306,7 @@ def num_filters():
 
 def num_chats():
     try:
-        return SESSION.query(func.count(distinct(Customfilters.CHAT_ID))).scalar()
+        return SESSION.query(func.count(distinct(CustomFilters.chat_id))).scalar()
     finally:
         SESSION.close()
 
@@ -320,7 +314,7 @@ def num_chats():
 def __load_chat_filters():
     global CHAT_FILTERS
     try:
-        chats = SESSION.query(Customfilters.CHAT_ID).distinct().all()
+        chats = SESSION.query(CustomFilters.chat_id).distinct().all()
         for (chat_id,) in chats:  # remove tuple by ( ,)
             CHAT_FILTERS[chat_id] = []
 
@@ -357,7 +351,7 @@ def __migrate_filters():
             else:
                 file_type = Types.TEXT
 
-            print(str(x.chat_id), x.keyword, x.reply, file_type.value)
+            print(x.chat_id, x.keyword, x.reply, file_type.value)
             if file_type == Types.TEXT:
                 filt = CustomFilters(
                     str(x.chat_id), x.keyword, x.reply, file_type.value, None
@@ -378,16 +372,14 @@ def migrate_chat(old_chat_id, new_chat_id):
     with CUST_FILT_LOCK:
         chat_filters = (
             SESSION.query(CustomFilters)
-            .filter(Customfilters.CHAT_ID == str(old_chat_id))
+            .filter(CustomFilters.chat_id == str(old_chat_id))
             .all()
         )
         for filt in chat_filters:
             filt.chat_id = str(new_chat_id)
         SESSION.commit()
-        try:
+        with contextlib.suppress(KeyError):
             CHAT_FILTERS[str(new_chat_id)] = CHAT_FILTERS[str(old_chat_id)]
-        except KeyError:
-            pass
         del CHAT_FILTERS[str(old_chat_id)]
 
         with BUTTON_LOCK:

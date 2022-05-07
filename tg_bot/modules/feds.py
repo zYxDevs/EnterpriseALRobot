@@ -8,21 +8,21 @@ import csv
 import os
 import ast
 from telegram.ext import CallbackContext
-from telegram.error import BadRequest, TelegramError, Unauthorized
+from telegram.error import BadRequest, TelegramError, Forbidden
 from telegram import (
-    ParseMode,
     Update,
     Chat,
     User,
     MessageEntity,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    ChatAction,
+    # ChatAction,
 )
-from telegram.utils.helpers import mention_html, mention_markdown
+from telegram.constants import ParseMode, ChatAction
+from telegram.helpers import mention_html, mention_markdown
 
 from tg_bot import (
-    application,
+    app as application,
     OWNER_ID,
     SUDO_USERS,
     WHITELIST_USERS,
@@ -129,13 +129,8 @@ async def new_fed(update, context):
             parse_mode=ParseMode.MARKDOWN,
         )
         try:
-            await context.bot.send_message(
-                GBAN_LOGS,
-                "Federation <b>{}</b> has been created with ID: <pre>{}</pre>".format(
-                    fed_name, fed_id
-                ),
-                parse_mode=ParseMode.HTML,
-            )
+            await context.bot.send_message(GBAN_LOGS, f"Federation <b>{fed_name}</b> has been created with ID: <pre>{fed_id}</pre>", parse_mode=ParseMode.HTML)
+
         except Exception:
             log.warning("Cannot send a message to GBAN_LOGS")
     else:
@@ -145,7 +140,7 @@ async def new_fed(update, context):
 
 
 @typing_action
-@kigcmd(command="delfed", pass_args=True)
+@kigcmd(command="delfed")
 async def del_fed(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -176,32 +171,17 @@ async def del_fed(update, context):
         await update.effective_message.reply_text("Only federation owners can do this!")
         return
 
-    await update.effective_message.reply_text(
-        "Are you sure you want to delete your federation? This action cannot be canceled, you will lose your entire ban list, and '{}' will be permanently lost.".format(
-            getinfo["fname"]
-        ),
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text="⚠️ Remove Federation ⚠️",
-                        callback_data="rmfed_{}".format(fed_id),
-                    )
-                ],
-                [InlineKeyboardButton(text="Cancel", callback_data="rmfed_cancel")],
-            ]
-        ),
-    )
+    await update.effective_message.reply_text(f"""Are you sure you want to delete your federation? This action cannot be canceled, you will lose your entire ban list, and '{getinfo["fname"]}' will be permanently lost.""", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="⚠️ Remove Federation ⚠️", callback_data=f"rmfed_{fed_id}")], [InlineKeyboardButton(text="Cancel", callback_data="rmfed_cancel")]]))
 
 
 @typing_action
-@kigcmd(command="chatfed", pass_args=True)
+@kigcmd(command="chatfed")
 async def fed_chat(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     fed_id = sql.get_fed_id(chat.id)
 
     user_id = update.effective_message.from_user.id
-    if not is_user_admin(update, user_id):
+    if not (await is_user_admin(update, user_id)):
         await update.effective_message.reply_text(
             "You must be an admin to execute this command"
         )
@@ -223,7 +203,7 @@ async def fed_chat(update, context):
 
 
 @typing_action
-@kigcmd(command="joinfed", pass_args=True)
+@kigcmd(command="joinfed")
 async def join_fed(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -268,7 +248,7 @@ async def join_fed(update, context):
             await message.reply_text("Failed to join federation!")
             return
 
-        get_fedlog = sql.get_fed_log(args[0])
+        get_fedlog = await sql.get_fed_log(args[0])
         if get_fedlog:
             if ast.literal_eval(get_fedlog):
                 await context.bot.send_message(
@@ -304,7 +284,7 @@ async def leave_fed(update, context):
     getuser = await context.bot.get_chat_member(chat.id, user.id).status
     if getuser in "creator" or user.id in SUDO_USERS:
         if sql.chat_leave_fed(chat.id) is True:
-            get_fedlog = sql.get_fed_log(fed_id)
+            get_fedlog = await sql.get_fed_log(fed_id)
             if get_fedlog:
                 if ast.literal_eval(get_fedlog):
                     await context.bot.send_message(
@@ -329,7 +309,7 @@ async def leave_fed(update, context):
 
 
 @typing_action
-@kigcmd(command="fpromote", pass_args=True)
+@kigcmd(command="fpromote")
 async def user_join_fed(update, context):
     chat = update.effective_chat
     user = update.effective_user
@@ -394,7 +374,7 @@ async def user_join_fed(update, context):
 
 
 @typing_action
-@kigcmd(command="fdemote", pass_args=True)
+@kigcmd(command="fdemote")
 async def user_demote_fed(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -455,7 +435,7 @@ async def user_demote_fed(update, context):
 
 
 @typing_action
-@kigcmd(command="fedinfo", pass_args=True)
+@kigcmd(command="fedinfo")
 async def fed_info(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -506,7 +486,7 @@ async def fed_info(update, context):
 
 
 @typing_action
-@kigcmd(command="fedadmins", pass_args=True)
+@kigcmd(command="fedadmins")
 async def fed_admin(update, context):
 
     chat = update.effective_chat  # type: Optional[Chat]
@@ -559,7 +539,7 @@ async def fed_admin(update, context):
 
 
 @typing_action
-@kigcmd(command=["fban", "fedban"], pass_args=True)
+@kigcmd(command=["fban", "fedban"])
 async def fed_ban(update, context):  # sourcery no-metrics
 
     chat = update.effective_chat  # type: Optional[Chat]
@@ -718,7 +698,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
                 parse_mode="HTML",
             )
         # If fedlog is set, then send message, except fedlog is current chat
-        get_fedlog = sql.get_fed_log(fed_id)
+        get_fedlog = await sql.get_fed_log(fed_id)
         if get_fedlog:
             if int(get_fedlog) != int(chat.id):
                 await context.bot.send_message(
@@ -755,7 +735,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
                 if excp.message in FBAN_ERRORS:
                     try:
                         await application.bot.getChat(fedschat)
-                    except Unauthorized:
+                    except Forbidden:
                         sql.chat_leave_fed(fedschat)
                         log.info(
                             "Chat {} has leave fed {} because I was kicked".format(
@@ -794,7 +774,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
                         if excp.message in FBAN_ERRORS:
                             try:
                                 await application.bot.getChat(fedschat)
-                            except Unauthorized:
+                            except Forbidden:
                                 targetfed_id = sql.get_fed_id(fedschat)
                                 sql.unsubs_fed(fed_id, targetfed_id)
                                 log.info(
@@ -878,7 +858,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
             parse_mode="HTML",
         )
     # If fedlog is set, then send message, except fedlog is current chat
-    get_fedlog = sql.get_fed_log(fed_id)
+    get_fedlog = await sql.get_fed_log(fed_id)
     if get_fedlog:
         if int(get_fedlog) != int(chat.id):
             await context.bot.send_message(
@@ -949,7 +929,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
                         if excp.message in FBAN_ERRORS:
                             try:
                                 await application.bot.getChat(fedschat)
-                            except Unauthorized:
+                            except Forbidden:
                                 targetfed_id = sql.get_fed_id(fedschat)
                                 sql.unsubs_fed(fed_id, targetfed_id)
                                 log.info(
@@ -978,7 +958,7 @@ async def fed_ban(update, context):  # sourcery no-metrics
 
 
 @typing_action
-@kigcmd(command=["unfban", "rmfedban"], pass_args=True)
+@kigcmd(command=["unfban", "rmfedban"])
 async def unfban(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -1085,7 +1065,7 @@ async def unfban(update, context):
             parse_mode="HTML",
         )
     # If fedlog is set, then send message, except fedlog is current chat
-    get_fedlog = sql.get_fed_log(fed_id)
+    get_fedlog = await sql.get_fed_log(fed_id)
     if get_fedlog:
         if int(get_fedlog) != int(chat.id):
             await context.bot.send_message(
@@ -1154,7 +1134,7 @@ async def unfban(update, context):
                     if excp.message in FBAN_ERRORS:
                         try:
                             await application.bot.getChat(fedschat)
-                        except Unauthorized:
+                        except Forbidden:
                             targetfed_id = sql.get_fed_id(fedschat)
                             sql.unsubs_fed(fed_id, targetfed_id)
                             log.info(
@@ -1246,7 +1226,7 @@ async def set_frules(update, context):
 
         rules = sql.get_fed_info(fed_id)["frules"]
         getfed = sql.get_fed_info(fed_id)
-        get_fedlog = sql.get_fed_log(fed_id)
+        get_fedlog = await sql.get_fed_log(fed_id)
         if get_fedlog:
             if ast.literal_eval(get_fedlog):
                 await context.bot.send_message(
@@ -1264,7 +1244,7 @@ async def set_frules(update, context):
 
 
 @typing_action
-@kigcmd(command="frules", pass_args=True)
+@kigcmd(command="frules")
 async def get_frules(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     args = context.args
@@ -1288,7 +1268,7 @@ async def get_frules(update, context):
 
 
 @typing_action
-@kigcmd(command="fbroadcast", pass_args=True)
+@kigcmd(command="fbroadcast")
 async def fed_broadcast(update, context):
     msg = update.effective_message  # type: Optional[Message]
     user = update.effective_user  # type: Optional[User]
@@ -1327,7 +1307,7 @@ async def fed_broadcast(update, context):
             except TelegramError:
                 try:
                     await application.bot.getChat(chat)
-                except Unauthorized:
+                except Forbidden:
                     failed += 1
                     sql.chat_leave_fed(chat)
                     log.info(
@@ -1348,7 +1328,7 @@ async def fed_broadcast(update, context):
 
 
 @send_action(ChatAction.UPLOAD_DOCUMENT)
-@kigcmd(command="fbanlist", pass_args=True, pass_chat_data=True)
+@kigcmd(command="fbanlist", pass_chat_data=True)
 async def fed_ban_list(update, context):  # sourcery no-metrics
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -1528,7 +1508,7 @@ async def fed_ban_list(update, context):  # sourcery no-metrics
 
 
 @typing_action
-@kigcmd(command="fednotif", pass_args=True)
+@kigcmd(command="fednotif")
 async def fed_notif(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -1564,7 +1544,7 @@ async def fed_notif(update, context):
 
 
 @typing_action
-@kigcmd(command="fedchats", pass_args=True)
+@kigcmd(command="fedchats")
 async def fed_chats(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -1602,7 +1582,7 @@ async def fed_chats(update, context):
     for chats in getlist:
         try:
             chat_name = await application.bot.getChat(chats).title
-        except Unauthorized:
+        except Forbidden:
             sql.chat_leave_fed(chats)
             log.info(
                 "Chat {} has leave fed {} because I was kicked".format(
@@ -1629,7 +1609,7 @@ async def fed_chats(update, context):
 
 
 @typing_action
-@kigcmd(command="importfbans", pass_args=True, pass_chat_data=True)
+@kigcmd(command="importfbans", pass_chat_data=True)
 async def fed_import_bans(update, context):  # sourcery no-metrics
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -1762,7 +1742,7 @@ async def fed_import_bans(update, context):  # sourcery no-metrics
             )
             if failed >= 1:
                 text += " {} Failed to import.".format(failed)
-            get_fedlog = sql.get_fed_log(fed_id)
+            get_fedlog = await sql.get_fed_log(fed_id)
             if get_fedlog:
                 if ast.literal_eval(get_fedlog):
                     teks = "Fed *{}* has successfully imported data. {} banned.".format(
@@ -1840,7 +1820,7 @@ async def fed_import_bans(update, context):  # sourcery no-metrics
             text = "Files were imported successfully. {} people banned.".format(success)
             if failed >= 1:
                 text += " {} Failed to import.".format(failed)
-            get_fedlog = sql.get_fed_log(fed_id)
+            get_fedlog = await sql.get_fed_log(fed_id)
             if get_fedlog:
                 if ast.literal_eval(get_fedlog):
                     teks = "Fed *{}* has successfully imported data. {} banned.".format(
@@ -1879,7 +1859,7 @@ async def del_fed_button(update, context):
 
 
 @typing_action
-@kigcmd(command="fbanstat", pass_args=True)
+@kigcmd(command="fbanstat")
 async def fed_stat_user(update, context):  # sourcery no-metrics
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
@@ -1988,7 +1968,7 @@ async def fed_stat_user(update, context):  # sourcery no-metrics
 
 
 @typing_action
-@kigcmd(command="setfedlog", pass_args=True)
+@kigcmd(command="setfedlog")
 async def set_fed_log(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -2030,7 +2010,7 @@ async def set_fed_log(update, context):
 
 
 @typing_action
-@kigcmd(command="unsetfedlog", pass_args=True)
+@kigcmd(command="unsetfedlog")
 async def unset_fed_log(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -2073,7 +2053,7 @@ async def unset_fed_log(update, context):
 
 
 @typing_action
-@kigcmd("subfed", pass_args=True)
+@kigcmd("subfed")
 async def subs_feds(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -2114,7 +2094,7 @@ async def subs_feds(update, context):
                 ),
                 parse_mode="markdown",
             )
-            get_fedlog = sql.get_fed_log(args[0])
+            get_fedlog = await sql.get_fed_log(args[0])
             if get_fedlog:
                 if int(get_fedlog) != int(chat.id):
                     await context.bot.send_message(
@@ -2140,7 +2120,7 @@ async def subs_feds(update, context):
 
 
 @typing_action
-@kigcmd(command="unsubfed", pass_args=True)
+@kigcmd(command="unsubfed")
 async def unsubs_feds(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -2181,7 +2161,7 @@ async def unsubs_feds(update, context):
                 ),
                 parse_mode="markdown",
             )
-            get_fedlog = sql.get_fed_log(args[0])
+            get_fedlog = await sql.get_fed_log(args[0])
             if get_fedlog:
                 if int(get_fedlog) != int(chat.id):
                     await context.bot.send_message(
@@ -2207,7 +2187,7 @@ async def unsubs_feds(update, context):
 
 
 @typing_action
-@kigcmd(command="fedsubs", pass_args=True)
+@kigcmd(command="fedsubs")
 async def get_myfedsubs(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
@@ -2256,7 +2236,7 @@ async def get_myfedsubs(update, context):
 
 
 @typing_action
-@kigcmd(command="myfeds", pass_args=True)
+@kigcmd(command="myfeds")
 async def get_myfeds_list(update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]

@@ -6,25 +6,25 @@ Dank-del
 """
 
 
+
 import asyncio
+import contextlib
 import importlib
 import re
-import threading
 from sys import argv
 from typing import Optional
-
-from telegram import Update, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.constants import ParseMode
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.error import (
     TelegramError,
-    Unauthorized,
+    # Forbidden,
     BadRequest,
     TimedOut,
     ChatMigrated,
     NetworkError,
 )
-from telegram.ext import CallbackContext, Filters, Application
-from telegram.ext.application import DispatcherHandlerStop
-from telegram.utils.helpers import escape_markdown
+from telegram.ext import CallbackContext, filters
+from telegram.helpers import escape_markdown
 
 from tg_bot import (
     KInit,
@@ -132,8 +132,8 @@ async def test(update: Update, _: CallbackContext):
 
 
 @kigcallback(pattern=r"start_back")
-@kigcmd(command="start", pass_args=True)
-async def start(update: Update, context: CallbackContext):  # sourcery no-metrics
+@kigcmd(command="start")
+async def start(update: Update, context: CallbackContext):    # sourcery no-metrics
     """#TODO
 
     Params:
@@ -147,48 +147,8 @@ async def start(update: Update, context: CallbackContext):  # sourcery no-metric
         query = update.callback_query
         if hasattr(query, "id"):
             first_name = update.effective_user.first_name
-            await update.effective_message.edit_text(
-                text=gs(chat.id, "pm_start_text").format(
-                    escape_markdown(first_name),
-                    escape_markdown(context.bot.first_name),
-                    OWNER_ID,
-                ),
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "support_chat_link_btn"),
-                                url="https://t.me/YorktownEagleUnion",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "updates_channel_link_btn"),
-                                url="https://t.me/KigyoUpdates",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "src_btn"),
-                                url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",
-                            ),
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text="Try inline",
-                                switch_inline_query_current_chat="",
-                            ),
-                            InlineKeyboardButton(
-                                text="Help",
-                                callback_data="help_back",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "add_bot_to_group_btn"),
-                                url="t.me/{}?startgroup=true".format(
-                                    context.bot.username
-                                ),
-                            ),
-                        ],
-                    ]
-                ),
-            )
+            await update.effective_message.edit_text(text=gs(chat.id, "pm_start_text").format(escape_markdown(first_name), escape_markdown(context.bot.first_name), OWNER_ID,), parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=gs(chat.id, "support_chat_link_btn"), url="https://t.me/YorktownEagleUnion",), InlineKeyboardButton(text=gs(chat.id, "updates_channel_link_btn"), url="https://t.me/KigyoUpdates",), InlineKeyboardButton(text=gs(chat.id, "src_btn"), url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",),], [InlineKeyboardButton(text="Try inline", switch_inline_query_current_chat="",), InlineKeyboardButton(text="Help", callback_data="help_back",), InlineKeyboardButton(text=gs(chat.id, "add_bot_to_group_btn"), url=f"t.me/{context.bot.username}?startgroup=true")]]))
+
 
             await context.bot.answer_callback_query(query.id)
             return
@@ -240,7 +200,7 @@ async def start(update: Update, context: CallbackContext):  # sourcery no-metric
                 match = re.match("stngs_(.*)", args[0].lower())
                 chat = await application.bot.getChat(match.group(1))
 
-                if is_user_admin(update, update.effective_user.id):
+                if (await is_user_admin(update, update.effective_user.id)):
                     send_settings(match.group(1), update.effective_user.id, False)
                 else:
                     send_settings(match.group(1), update.effective_user.id, True)
@@ -250,48 +210,8 @@ async def start(update: Update, context: CallbackContext):  # sourcery no-metric
 
         else:
             first_name = update.effective_user.first_name
-            await update.effective_message.reply_text(
-                text=gs(chat.id, "pm_start_text").format(
-                    escape_markdown(first_name),
-                    escape_markdown(context.bot.first_name),
-                    OWNER_ID,
-                ),
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "support_chat_link_btn"),
-                                url="https://t.me/YorktownEagleUnion",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "updates_channel_link_btn"),
-                                url="https://t.me/KigyoUpdates",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "src_btn"),
-                                url="https://github.com/Dank-del/EnterpriseALRobot",
-                            ),
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text="Try inline",
-                                switch_inline_query_current_chat="",
-                            ),
-                            InlineKeyboardButton(
-                                text="Help",
-                                callback_data="help_back",
-                            ),
-                            InlineKeyboardButton(
-                                text=gs(chat.id, "add_bot_to_group_btn"),
-                                url="t.me/{}?startgroup=true".format(
-                                    context.bot.username
-                                ),
-                            ),
-                        ],
-                    ]
-                ),
-            )
+            await update.effective_message.reply_text(text=gs(chat.id, "pm_start_text").format(escape_markdown(first_name), escape_markdown(context.bot.first_name), OWNER_ID,), parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=gs(chat.id, "support_chat_link_btn"), url="https://t.me/YorktownEagleUnion",), InlineKeyboardButton(text=gs(chat.id, "updates_channel_link_btn"), url="https://t.me/KigyoUpdates",), InlineKeyboardButton(text=gs(chat.id, "src_btn"), url="https://github.com/Dank-del/EnterpriseALRobot",),], [InlineKeyboardButton(text="Try inline", switch_inline_query_current_chat="",), InlineKeyboardButton(text="Help", callback_data="help_back",), InlineKeyboardButton(text=gs(chat.id, "add_bot_to_group_btn"), url=f"t.me/{context.bot.username}?startgroup=true")]]))
+
 
     else:
         await update.effective_message.reply_text(gs(chat.id, "grp_start_text"))
@@ -313,7 +233,7 @@ async def error_callback(_, context: CallbackContext):
 
     try:
         raise context.error
-    except (Unauthorized, BadRequest):
+    except (BadRequest):
         pass
         # remove update.message.chat_id from conversation list
     except TimedOut:
@@ -347,7 +267,7 @@ async def help_button(update: Update, context: CallbackContext):
     chat = update.effective_chat
     # print(query.message.chat.id)
 
-    try:
+    with contextlib.suppress(BadRequest):
         if mod_match:
             module = mod_match.group(1)
             module = module.replace("_", " ")
@@ -415,10 +335,6 @@ async def help_button(update: Update, context: CallbackContext):
 
         # ensure no spinny white circle
         await context.bot.answer_callback_query(query.id)
-        # await query.message.delete()
-
-    except BadRequest:
-        pass
 
 
 @kigcmd(command="help")
@@ -439,21 +355,8 @@ async def get_help(update: Update, context: CallbackContext):
         if len(args) >= 2:
             if any(args[1].lower() == x for x in HELPABLE):
                 module = args[1].lower()
-                await update.effective_message.reply_text(
-                    f"Contact me in PM to get help of {module.capitalize()}",
-                    reply_markup=InlineKeyboardMarkup(
-                        [
-                            [
-                                InlineKeyboardButton(
-                                    text="Help",
-                                    url="t.me/{}?start=ghelp_{}".format(
-                                        context.bot.username, module
-                                    ),
-                                )
-                            ]
-                        ]
-                    ),
-                )
+                await update.effective_message.reply_text(f"Contact me in PM to get help of {module.capitalize()}", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Help", url=f"t.me/{context.bot.username}?start=ghelp_{module}")]]))
+
             else:
                 await update.effective_message.reply_text(
                     f"<code>{args[1].lower()}</code> is not a module",
@@ -461,19 +364,8 @@ async def get_help(update: Update, context: CallbackContext):
                 )
             return
 
-        await update.effective_message.reply_text(
-            "Contact me in PM to get the list of possible commands.",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            text="Help",
-                            url="t.me/{}?start=help".format(context.bot.username),
-                        )
-                    ]
-                ]
-            ),
-        )
+        await update.effective_message.reply_text("Contact me in PM to get the list of possible commands.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Help", url=f"t.me/{context.bot.username}?start=help")]]))
+
         return
 
     if len(args) >= 2:
@@ -629,24 +521,14 @@ async def settings_button(update: Update, context: CallbackContext):
         elif back_match:
             chat_id = back_match.group(1)
             chat = await bot.get_chat(chat_id)
-            await query.message.reply_text(
-                text="Hi there! There are quite a few settings for {} - go ahead and pick what "
-                "you're interested in.".format(escape_markdown(chat.title)),
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup(
-                    paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)
-                ),
-            )
+            await query.message.reply_text(text=f"Hi there! There are quite a few settings for {escape_markdown(chat.title)} - go ahead and pick what you're interested in.", parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)))
+
 
         # ensure no spinny white circle
         await bot.answer_callback_query(query.id)
         await query.message.delete()
     except BadRequest as excp:
-        if excp.message not in [
-            "Message is not modified",
-            "Query_id_invalid",
-            "Message can't be deleted",
-        ]:
+        if excp.message not in ["Message is not modified", "Query_id_invalid", "Message can't be deleted"]:
             log.exception("Exception in settings buttons. %s", str(query.data))
 
 
@@ -667,23 +549,10 @@ async def get_settings(update: Update, context: CallbackContext):
     if chat.type == chat.PRIVATE:
         send_settings(chat.id, user.id, True)
 
-    elif is_user_admin(update, user.id):
+    elif (await is_user_admin(update, user.id)):
         text = "Click here to get this chat's settings, as well as yours."
-        msg.reply_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            text="Settings",
-                            url="t.me/{}?start=stngs_{}".format(
-                                context.bot.username, chat.id
-                            ),
-                        )
-                    ]
-                ]
-            ),
-        )
+        msg.reply_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Settings", url=f"t.me/{context.bot.username}?start=stngs_{chat.id}")]]))
+
     else:
         text = "Click here to check your settings."
 
@@ -723,7 +592,7 @@ async def migrate_chats(update: Update, context: CallbackContext):
         mod.__migrate__(old_chat, new_chat)
 
     log.info("Successfully migrated!")
-    raise DispatcherHandlerStop
+    # raise DispatcherHandlerStop
 
 
 async def main():

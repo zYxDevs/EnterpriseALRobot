@@ -1,13 +1,14 @@
 import re
 import time
 from typing import Dict, List
+import typing
 
 import bleach
 import markdown2
 import emoji
 
 from telegram import MessageEntity
-from telegram.utils.helpers import escape_markdown
+from telegram.helpers import escape_markdown
 
 # NOTE: the url \ escape may cause double escapes
 # match * (bold) (don't escape if in url)
@@ -88,42 +89,34 @@ def markdown_parser(
         start = ent.offset + offset  # start of entity
         end = ent.offset + offset + ent.length - 1  # end of entity
 
-        # we only care about code, url, text links
-        if ent.type in ("code", "url", "text_link"):
-            # count emoji to switch counter
-            count = _calc_emoji_offset(txt[:start])
-            start -= count
-            end -= count
+        if ent.type not in ("code", "url", "text_link"):
+            continue
 
-            # URL handling -> do not escape if in [](), escape otherwise.
-            if ent.type == "url":
-                if any(
-                    match.start(1) <= start and end <= match.end(1)
-                    for match in LINK_REGEX.finditer(txt)
-                ):
-                    continue
-                # else, check the escapes between the prev and last and forcefully escape the url to avoid mangling
-                else:
-                    # TODO: investigate possible offset bug when lots of emoji are present
-                    res += _selective_escape(txt[prev:start] or "") + escape_markdown(
-                        ent_text
-                    )
+        # count emoji to switch counter
+        count = _calc_emoji_offset(txt[:start])
+        start -= count
+        end -= count
 
-            # code handling
-            elif ent.type == "code":
-                res += _selective_escape(txt[prev:start]) + "`" + ent_text + "`"
-
-            # handle markdown/html links
-            elif ent.type == "text_link":
-                res += _selective_escape(txt[prev:start]) + "[{}]({})".format(
-                    ent_text, ent.url
+        if ent.type == "url":
+            if any(
+                match.start(1) <= start and end <= match.end(1)
+                for match in LINK_REGEX.finditer(txt)
+            ):
+                continue
+            # else, check the escapes between the prev and last and forcefully escape the url to avoid mangling
+            else:
+                # TODO: investigate possible offset bug when lots of emoji are present
+                res += _selective_escape(txt[prev:start] or "") + escape_markdown(
+                    ent_text
                 )
 
-            end += 1
+        elif ent.type == "code":
+            res += f"{_selective_escape(txt[prev:start])}`{ent_text}`"
 
-        # anything else
-        else:
-            continue
+        elif ent.type == "text_link":
+            res += f"{_selective_escape(txt[prev:start])}[{ent_text}]({ent.url})"
+
+        end += 1
 
         prev = end
 
@@ -133,7 +126,7 @@ def markdown_parser(
 
 def button_markdown_parser(
     txt: str, entities: Dict[MessageEntity, str] = None, offset: int = 0
-) -> (str, List):
+) -> typing.Tuple[str, List]:
     markdown_note = markdown_parser(txt, entities, offset)
     prev = 0
     note_data = ""
@@ -156,8 +149,7 @@ def button_markdown_parser(
         else:
             note_data += markdown_note[prev:to_check]
             prev = match.start(1) - 1
-    else:
-        note_data += markdown_note[prev:]
+    note_data += markdown_note[prev:]
 
     return note_data, buttons
 
@@ -205,35 +197,33 @@ START_CHAR = ("'", '"', SMART_OPEN)
 
 
 def split_quotes(text: str) -> List:
-    if any(text.startswith(char) for char in START_CHAR):
-        counter = 1  # ignore first char -> is some kind of quote
-        while counter < len(text):
-            if text[counter] == "\\":
-                counter += 1
-            elif text[counter] == text[0] or (
-                text[0] == SMART_OPEN and text[counter] == SMART_CLOSE
-            ):
-                break
+    if not any(text.startswith(char) for char in START_CHAR):
+        return text.split(None, 1)
+    counter = 1  # ignore first char -> is some kind of quote
+    while counter < len(text):
+        if text[counter] == "\\":
             counter += 1
-        else:
-            return text.split(None, 1)
-
-        # 1 to avoid starting quote, and counter is exclusive so avoids ending
-        key = remove_escapes(text[1:counter].strip())
-        # index will be in range, or `else` would have been executed and returned
-        rest = text[counter + 1 :].strip()
-        if not key:
-            key = text[0] + text[0]
-        return list(filter(None, [key, rest]))
+        elif text[counter] == text[0] or (
+            text[0] == SMART_OPEN and text[counter] == SMART_CLOSE
+        ):
+            break
+        counter += 1
     else:
         return text.split(None, 1)
 
+    # 1 to avoid starting quote, and counter is exclusive so avoids ending
+    key = remove_escapes(text[1:counter].strip())
+    # index will be in range, or `else` would have been executed and returned
+    rest = text[counter + 1 :].strip()
+    if not key:
+        key = text[0] + text[0]
+    return list(filter(None, [key, rest]))
+
 
 def remove_escapes(text: str) -> str:
-    counter = 0
     res = ""
     is_escaped = False
-    while counter < len(text):
+    for counter in range(len(text)):
         if is_escaped:
             res += text[counter]
             is_escaped = False
@@ -241,7 +231,6 @@ def remove_escapes(text: str) -> str:
             is_escaped = True
         else:
             res += text[counter]
-        counter += 1
     return res
 
 
@@ -255,7 +244,7 @@ def escape_chars(text: str, to_escape: List[str]) -> str:
     return new_text
 
 
-def extract_time(message, time_val):
+async def extract_time(message, time_val):
     if any(time_val.endswith(unit) for unit in ("m", "h", "d")):
         unit = time_val[-1]
         time_num = time_val[:-1]  # type: str
@@ -274,11 +263,8 @@ def extract_time(message, time_val):
             return ""
         return bantime
     else:
-        await message.reply_text(
-            "Invalid time type specified. Expected m,h, or d, got: {}".format(
-                time_val[-1]
-            )
-        )
+        await message.reply_text(f"Invalid time type specified. Expected m,h, or d, got: {time_val[-1]}")
+
         return ""
 
 

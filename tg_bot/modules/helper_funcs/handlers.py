@@ -11,7 +11,7 @@ from pyrate_limiter import (
 
 try:
     from tg_bot import CUSTOM_CMD
-except:
+except Exception:
     CUSTOM_CMD = False
 
 CMD_STARTERS = CUSTOM_CMD or ["/", "!"]
@@ -61,7 +61,7 @@ class CustomCommandHandler(tg.CommandHandler):
     def __init__(self, command, callback, block=False, **kwargs):
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
-        super().__init__(command, callback, run_async=run_async, **kwargs)
+        super().__init__(command, callback, **kwargs)
 
     def check_update(self, update):
         if not isinstance(update, Update) or not update.effective_message:
@@ -70,15 +70,15 @@ class CustomCommandHandler(tg.CommandHandler):
 
         try:
             user_id = update.effective_user.id
-        except:
+        except Exception:
             user_id = None
 
         if message.text and len(message.text) > 1:
-            fst_word = await message.text.split(None, 1)[0]
+            fst_word = message.text.split(None, 1)[0]
             if len(fst_word) > 1 and any(
                 fst_word.startswith(start) for start in CMD_STARTERS
             ):
-                args = await message.text.split()[1:]
+                args = message.text.split()[1:]
                 command = fst_word[1:].split("@")
                 command.append(
                     message.bot.username
@@ -86,15 +86,14 @@ class CustomCommandHandler(tg.CommandHandler):
 
                 if not (
                     command[0].lower() in self.command
-                    and command[1].lower() == await message.bot.username.lower()
+                    and command[1].lower() == message.bot.username.lower()
                 ):
                     return None
 
                 if SpamChecker.check_user(user_id):
                     return None
 
-                filter_result = self.filters(update)
-                if filter_result:
+                if filter_result := self.filters(update):
                     return args, filter_result
                 else:
                     return False

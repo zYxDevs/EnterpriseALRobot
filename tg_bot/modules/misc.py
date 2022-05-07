@@ -4,10 +4,11 @@ import time
 import git
 import requests
 from io import BytesIO
-from telegram import Chat, Update, MessageEntity, ParseMode, User
+from telegram import Chat, Update, MessageEntity, User
 from telegram.error import BadRequest
-from telegram.ext import Filters, CallbackContext
-from telegram.utils.helpers import mention_html, escape_markdown
+from telegram.constants import ParseMode
+from telegram.ext import filters, CallbackContext
+from telegram.helpers import mention_html, escape_markdown
 from subprocess import Popen, PIPE
 
 from tg_bot import (
@@ -61,7 +62,7 @@ Keep in mind that your message <b>MUST</b> contain some text other than just a b
 """
 
 
-@kigcmd(command="id", pass_args=True)
+@kigcmd(command="id")
 async def get_id(update: Update, context: CallbackContext):
     bot, args = context.bot, context.args
     message = update.effective_message
@@ -111,7 +112,7 @@ async def gifid(update: Update, _):
         )
 
 
-@kigcmd(command="info", pass_args=True)
+@kigcmd(command="info")
 async def info(update: Update, context: CallbackContext):  # sourcery no-metrics
     bot = context.bot
     args = context.args
@@ -146,7 +147,7 @@ async def info(update: Update, context: CallbackContext):  # sourcery no-metrics
         text = get_chat_info(user)
         is_chat = True
     else:
-        text = get_user_info(chat, user)
+        text = await get_user_info(chat, user)
         is_chat = False
 
     if INFOPIC:
@@ -193,7 +194,7 @@ async def info(update: Update, context: CallbackContext):  # sourcery no-metrics
         )
 
 
-def get_user_info(chat: Chat, user: User) -> str:
+async def get_user_info(chat: Chat, user: User) -> str:
     bot = application.bot
     text = (
         f"<b>General:</b>\n"
@@ -269,7 +270,7 @@ def get_chat_info(user):
     return text
 
 
-@kigcmd(command="echo", pass_args=True, filters=filters.ChatType.GROUPS)
+@kigcmd(command="echo", filters=filters.ChatType.GROUPS)
 @user_admin
 async def echo(update: Update, _):
     args = await update.effective_message.text.split(None, 1)

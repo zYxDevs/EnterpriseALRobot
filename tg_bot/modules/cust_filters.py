@@ -3,23 +3,22 @@ from html import escape
 from typing import Optional
 
 import telegram
+from telegram.constants import ParseMode
 from telegram import (
     Chat,
-    ParseMode,
     InlineKeyboardMarkup,
     Message,
     InlineKeyboardButton,
 )
 from telegram.error import BadRequest
 from telegram.ext import (
-    DispatcherHandlerStop,
-    Filters,
+    # DispatcherHandlerStop,
+    filters,
 )
-from telegram.utils.helpers import mention_html, escape_markdown
+from telegram.helpers import mention_html, escape_markdown
 
-from tg_bot import application, log, SUDO_USERS
+from tg_bot import app as application, log, SUDO_USERS
 from tg_bot.modules.helper_funcs.extraction import extract_text
-from tg_bot.modules.helper_funcs.filters import CustomFilters
 from tg_bot.modules.helper_funcs.misc import build_keyboard_parser
 from tg_bot.modules.helper_funcs.msg_types import get_filter_type
 from tg_bot.modules.helper_funcs.string_handling import (
@@ -58,7 +57,7 @@ async def list_handlers(update, context):
     chat = update.effective_chat
     user = update.effective_user
 
-    conn = connected(context.bot, update, chat, user.id, need_admin=False)
+    conn = await connected(context.bot, update, chat, user.id, need_admin=False)
     if conn is not False:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -75,9 +74,7 @@ async def list_handlers(update, context):
     all_handlers = sql.get_chat_triggers(chat_id)
 
     if not all_handlers:
-        send_message(
-            update.effective_message, "No filters saved in {}!".format(chat_name)
-        )
+        send_message(update.effective_message, f"No filters saved in {chat_name}!")
         return
 
     for keyword in all_handlers:
@@ -100,10 +97,10 @@ async def list_handlers(update, context):
 
 
 # NOT ASYNC BECAUSE DISPATCHER HANDLER RAISED
-@kigcmd(command="filter", block=True)
+@kigcmd(command="filter")
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @typing_action
-async def filters(update, context):  # sourcery no-metrics
+async def filters_add(update, context):  # sourcery no-metrics
     chat = update.effective_chat
     user = update.effective_user
     msg = update.effective_message
@@ -111,7 +108,7 @@ async def filters(update, context):  # sourcery no-metrics
         None, 1
     )  # use python's maxsplit to separate Cmd, keyword, and reply_text
 
-    conn = connected(context.bot, update, chat, user.id)
+    conn = await connected(context.bot, update, chat, user.id)
     if conn is not False:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -215,16 +212,12 @@ async def filters(update, context):  # sourcery no-metrics
     # sql.add_filter(chat_id, keyword, content, is_sticker, is_document, is_image, is_audio, is_voice, is_video, buttons)
 
     if add is True:
-        send_message(
-            update.effective_message,
-            "Saved filter '{}' in *{}*!".format(keyword, chat_name),
-            parse_mode=telegram.ParseMode.MARKDOWN,
-        )
-    raise DispatcherHandlerStop
+        send_message(update.effective_message, f"Saved filter '{keyword}' in *{chat_name}*!", parse_mode=telegram.ParseMode.MARKDOWN)
+    # raise DispatcherHandlerStop
 
 
 # NOT ASYNC BECAUSE DISPATCHER HANDLER RAISED
-@kigcmd(command="stop", block=True)
+@kigcmd(command="stop")
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @typing_action
 async def stop_filter(update, context):
@@ -232,7 +225,7 @@ async def stop_filter(update, context):
     user = update.effective_user
     args = await update.effective_message.text.split(None, 1)
 
-    conn = connected(context.bot, update, chat, user.id)
+    conn = await connected(context.bot, update, chat, user.id)
     if conn is not False:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -252,12 +245,9 @@ async def stop_filter(update, context):
     for keyword in chat_filters:
         if keyword == args[1]:
             sql.remove_filter(chat_id, args[1])
-            send_message(
-                update.effective_message,
-                "Okay, I'll stop replying to that filter in *{}*.".format(chat_name),
-                parse_mode=telegram.ParseMode.MARKDOWN,
-            )
-            raise DispatcherHandlerStop
+            send_message(update.effective_message, f"Okay, I'll stop replying to that filter in *{chat_name}*.", parse_mode=telegram.ParseMode.MARKDOWN)
+
+                    # raise DispatcherHandlerStop
 
     send_message(
         update.effective_message,
@@ -265,7 +255,7 @@ async def stop_filter(update, context):
     )
 
 
-@kigmsg((Customfilters.HAS_TEXT & ~filters.Update.EDITED_MESSAGE))
+@kigmsg((filters.TEXT & ~filters.UpdateType.EDITED_MESSAGE))
 async def reply_filter(update, context):  # sourcery no-metrics
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
@@ -296,37 +286,9 @@ async def reply_filter(update, context):  # sourcery no-metrics
                     "mention",
                 ]
                 if filt.reply_text:
-                    valid_format = escape_invalid_curly_brackets(
-                        markdown_to_html(filt.reply_text), VALID_WELCOME_FORMATTERS
-                    )
-                    if valid_format:
-                        filtext = valid_format.format(
-                            first=escape(message.from_user.first_name),
-                            last=escape(
-                                message.from_user.last_name
-                                or message.from_user.first_name
-                            ),
-                            fullname=" ".join(
-                                [
-                                    escape(message.from_user.first_name),
-                                    escape(message.from_user.last_name),
-                                ]
-                                if message.from_user.last_name
-                                else [escape(message.from_user.first_name)]
-                            ),
-                            username="@" + escape(message.from_user.username)
-                            if message.from_user.username
-                            else mention_html(
-                                message.from_user.id, message.from_user.first_name
-                            ),
-                            mention=mention_html(
-                                message.from_user.id, message.from_user.first_name
-                            ),
-                            chatname=escape(message.chat.title)
-                            if message.chat.type != "private"
-                            else escape(message.from_user.first_name),
-                            id=message.from_user.id,
-                        )
+                    if valid_format := escape_invalid_curly_brackets(markdown_to_html(filt.reply_text), VALID_WELCOME_FORMATTERS):
+                        filtext = valid_format.format(first=escape(message.from_user.first_name), last=escape(message.from_user.last_name or message.from_user.first_name), fullname=" ".join([escape(message.from_user.first_name), escape(message.from_user.last_name),] if message.from_user.last_name else [escape(message.from_user.first_name)]), username=f"@{escape(message.from_user.username)}" if message.from_user.username else mention_html(message.from_user.id, message.from_user.first_name), mention=mention_html(message.from_user.id, message.from_user.first_name), chatname=escape(message.chat.title) if message.chat.type != "private" else escape(message.from_user.first_name), id=message.from_user.id)
+
                     else:
                         filtext = ""
                 else:
@@ -346,27 +308,16 @@ async def reply_filter(update, context):  # sourcery no-metrics
                         error_catch = get_exception(excp, filt, chat)
                         if error_catch == "noreply":
                             try:
-                                await context.bot.send_message(
-                                    chat.id,
-                                    filtext,
-                                    parse_mode=ParseMode.HTML,
-                                    disable_web_page_preview=True,
-                                    reply_markup=keyboard,
-                                )
+                                await context.bot.send_message(chat.id, filtext, parse_mode=ParseMode.HTML, disable_web_page_preview=True, reply_markup=keyboard)
+
                             except BadRequest as excp:
-                                log.exception("Error in filters: " + excp.message)
-                                send_message(
-                                    update.effective_message,
-                                    get_exception(excp, filt, chat),
-                                )
+                                log.exception(f"Error in filters: {excp.message}")
+                                send_message(update.effective_message, get_exception(excp, filt, chat))
                         else:
                             try:
-                                send_message(
-                                    update.effective_message,
-                                    get_exception(excp, filt, chat),
-                                )
+                                send_message(update.effective_message, get_exception(excp, filt, chat))
                             except BadRequest as excp:
-                                log.exception("Failed to send message: " + excp.message)
+                                log.exception(f"Failed to send message: {excp.message}")
                 elif ENUM_FUNC_MAP[filt.file_type] == application.bot.send_sticker:
                     ENUM_FUNC_MAP[filt.file_type](
                         chat.id,
@@ -411,46 +362,31 @@ async def reply_filter(update, context):  # sourcery no-metrics
                 except BadRequest as excp:
                     if excp.message == "Unsupported url protocol":
                         try:
-                            send_message(
-                                update.effective_message,
-                                "You seem to be trying to use an unsupported url protocol. "
-                                "Telegram doesn't support buttons for some protocols, such as tg://. Please try "
-                                "again...",
-                            )
+                            send_message(update.effective_message, "You seem to be trying to use an unsupported url protocol. Telegram doesn't support buttons for some protocols, such as tg://. Please try again...")
+
                         except BadRequest as excp:
-                            log.exception("Error in filters: " + excp.message)
+                            log.exception(f"Error in filters: {excp.message}")
                     elif excp.message == "Reply message not found":
                         try:
-                            await context.bot.send_message(
-                                chat.id,
-                                filt.reply,
-                                parse_mode=ParseMode.MARKDOWN,
-                                disable_web_page_preview=True,
-                                reply_markup=keyboard,
-                            )
+                            await context.bot.send_message(chat.id, filt.reply, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True, reply_markup=keyboard)
+
                         except BadRequest as excp:
-                            log.exception("Error in filters: " + excp.message)
+                            log.exception(f"Error in filters: {excp.message}")
                     else:
                         try:
-                            send_message(
-                                update.effective_message,
-                                "This message couldn't be sent as it's incorrectly formatted.",
-                            )
+                            send_message(update.effective_message, "This message couldn't be sent as it's incorrectly formatted.")
+
                         except BadRequest as excp:
-                            log.exception("Error in filters: " + excp.message)
+                            log.exception(f"Error in filters: {excp.message}")
                         log.warning("Message %s could not be parsed", str(filt.reply))
-                        log.exception(
-                            "Could not parse filter %s in chat %s",
-                            str(filt.keyword),
-                            str(chat.id),
-                        )
+                        log.exception("Could not parse filter %s in chat %s", str(filt.keyword), str(chat.id))
 
             else:
                 # LEGACY - all new filters will have has_markdown set to True.
                 try:
                     send_message(update.effective_message, filt.reply)
                 except BadRequest as excp:
-                    log.exception("Error in filters: " + excp.message)
+                    log.exception(f"Error in filters: {excp.message}")
             break
 
 
@@ -547,7 +483,7 @@ def addnew_filter(update, chat_id, keyword, text, file_type, file_id, buttons):
 
 
 def __stats__():
-    return "• {} filters, across {} chats.".format(sql.num_filters(), sql.num_chats())
+    return f"• {sql.num_filters()} filters, across {sql.num_chats()} chats."
 
 
 def __import_data__(chat_id, data):
@@ -563,7 +499,7 @@ def __migrate__(old_chat_id, new_chat_id):
 
 def __chat_settings__(chat_id, _):
     cust_filters = sql.get_chat_triggers(chat_id)
-    return "There are `{}` custom filters here.".format(len(cust_filters))
+    return f"There are `{len(cust_filters)}` custom filters here."
 
 
 from tg_bot.modules.language import gs

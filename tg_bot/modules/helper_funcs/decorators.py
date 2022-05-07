@@ -6,7 +6,7 @@ from telegram.ext import (
     InlineQueryHandler,
 )
 from telegram.ext.filters import BaseFilter
-from tg_bot import application as d, log, app
+from tg_bot import log, app
 from telegram.ext import Application
 from typing import Optional, Union, List
 
@@ -34,8 +34,6 @@ class KigyoTelegramHandler:
                             command,
                             func,
                             filters=filters,
-                            run_async=run_async,
-                            pass_args=pass_args,
                             admin_ok=admin_ok,
                         ),
                         group,
@@ -46,8 +44,6 @@ class KigyoTelegramHandler:
                             command,
                             func,
                             filters=filters,
-                            run_async=run_async,
-                            pass_args=pass_args,
                         ),
                         group,
                     )
@@ -61,8 +57,6 @@ class KigyoTelegramHandler:
                             command,
                             func,
                             filters=filters,
-                            run_async=run_async,
-                            pass_args=pass_args,
                             admin_ok=admin_ok,
                             pass_chat_data=pass_chat_data,
                         )
@@ -73,8 +67,6 @@ class KigyoTelegramHandler:
                             command,
                             func,
                             filters=filters,
-                            run_async=run_async,
-                            pass_args=pass_args,
                             pass_chat_data=pass_chat_data,
                         )
                     )
@@ -98,29 +90,21 @@ class KigyoTelegramHandler:
             try:
                 if can_disable:
                     self.app.add_handler(
-                        DisableAbleMessageHandler(
-                            pattern, func, friendly=friendly, run_async=run_async
-                        ),
+                        DisableAbleMessageHandler(pattern, func, friendly=friendly),
                         group,
                     )
                 else:
-                    self.app.add_handler(
-                        MessageHandler(pattern, func, run_async=run_async), group
-                    )
+                    self.app.add_handler(MessageHandler(pattern, func), group)
                 log.debug(
                     f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__} in group {group}"
                 )
             except TypeError:
                 if can_disable:
                     self.app.add_handler(
-                        DisableAbleMessageHandler(
-                            pattern, func, friendly=friendly, run_async=run_async
-                        )
+                        DisableAbleMessageHandler(pattern, func, friendly=friendly)
                     )
                 else:
-                    self.app.add_handler(
-                        MessageHandler(pattern, func, run_async=run_async)
-                    )
+                    self.app.add_handler(MessageHandler(pattern, func))
                 log.debug(
                     f"[KIGMSG] Loaded filter pattern {pattern} for function {func.__name__}"
                 )
@@ -131,11 +115,7 @@ class KigyoTelegramHandler:
 
     def callbackquery(self, pattern: str = None, run_async: bool = True):
         def _callbackquery(func):
-            self.app.add_handler(
-                CallbackQueryHandler(
-                    pattern=pattern, callback=func, run_async=run_async
-                )
-            )
+            self.app.add_handler(CallbackQueryHandler(pattern=pattern, callback=func))
             log.debug(
                 f"[KIGCALLBACK] Loaded callbackquery handler with pattern {pattern} for function {func.__name__}"
             )
@@ -156,9 +136,8 @@ class KigyoTelegramHandler:
                 InlineQueryHandler(
                     pattern=pattern,
                     callback=func,
-                    run_async=run_async,
-                    pass_user_data=pass_user_data,
-                    pass_chat_data=pass_chat_data,
+                    # pass_user_data=pass_user_data,
+                    # pass_chat_data=pass_chat_data,
                     chat_types=chat_types,
                 )
             )

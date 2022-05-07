@@ -1,10 +1,10 @@
 import html
 
-from telegram import Update, TelegramError
+from telegram import Update
 from telegram.ext import CallbackContext
-from telegram.ext.filters import Filters
+from telegram.ext import filters
 from tg_bot.modules.helper_funcs.chat_status import bot_admin, bot_can_delete
-
+from telegram.error import TelegramError
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 import tg_bot.modules.sql.antilinkedchannel_sql as sql
@@ -72,27 +72,26 @@ async def set_antipinchannel(update: Update, context: CallbackContext):
                 sql.disable_linked(chat.id)
                 sql.enable_pin(chat.id)
                 await message.reply_html(
-                    "Disabled Linked channel deletion and Enabled anti channel pin in {}".format(
-                        html.escape(chat.title)
-                    )
+                    f"Disabled Linked channel deletion and Enabled anti channel pin in {html.escape(chat.title)}"
                 )
+
             else:
                 sql.enable_pin(chat.id)
                 await message.reply_html(
-                    "Enabled anti channel pin in {}".format(html.escape(chat.title))
+                    f"Enabled anti channel pin in {html.escape(chat.title)}"
                 )
+
         elif s in ["off", "no"]:
             sql.disable_pin(chat.id)
             await message.reply_html(
-                "Disabled anti channel pin in {}".format(html.escape(chat.title))
+                f"Disabled anti channel pin in {html.escape(chat.title)}"
             )
+
         else:
-            await message.reply_text("Unrecognized arguments {}".format(s))
+            await message.reply_text(f"Unrecognized arguments {s}")
         return
     await message.reply_html(
-        "Linked channel message unpin is currently {} in {}".format(
-            sql.status_pin(chat.id), html.escape(chat.title)
-        )
+        f"Linked channel message unpin is currently {sql.status_pin(chat.id)} in {html.escape(chat.title)}"
     )
 
 

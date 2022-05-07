@@ -4,14 +4,15 @@ from tg_bot import log, SUDO_USERS, SARDEGNA_USERS, WHITELIST_USERS
 from tg_bot.modules.helper_funcs.chat_status import user_not_admin
 from tg_bot.modules.log_channel import loggable
 from tg_bot.modules.sql import reporting_sql as sql
-from telegram import Chat, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
-from telegram.error import BadRequest, Unauthorized
+from telegram import Chat, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import (
     CallbackContext,
-    Filters,
+    filters,
 )
+from telegram.constants import ParseMode
 import tg_bot.modules.sql.log_channel_sql as logsql
-from telegram.utils.helpers import mention_html
+from telegram.helpers import mention_html
 from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg, kigcallback
 
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
@@ -211,7 +212,7 @@ async def report(update: Update, context: CallbackContext) -> str:
                             ):  # If user is giving a reason, send his message too
                                 await message.forward(admin.user.id)
 
-                except Unauthorized:
+                except Forbidden:
                     pass
                 except BadRequest as excp:  # TODO: cleanup exceptions
                     log.exception("Exception while reporting user\n{}".format(excp))

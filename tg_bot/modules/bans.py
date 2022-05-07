@@ -1,10 +1,11 @@
 import html
 from typing import Optional
 
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram.constants import ParseMode
 from telegram.error import BadRequest
-from telegram.ext import Filters, CallbackContext
-from telegram.utils.helpers import mention_html
+from telegram.ext import filters, CallbackContext
+from telegram.helpers import mention_html
 
 from tg_bot import (
     DEV_USERS,
@@ -30,7 +31,7 @@ from tg_bot.modules.helper_funcs.decorators import kigcmd
 from ..modules.helper_funcs.anonymous import user_admin, AdminPerms
 
 
-@kigcmd(command="ban", pass_args=True)
+@kigcmd(command="ban")
 @connection_status
 @bot_admin
 @can_restrict
@@ -51,13 +52,8 @@ async def ban(
             chat_id=chat.id, sender_chat_id=message.reply_to_message.sender_chat.id
         )
         if r:
-            await message.reply_text(
-                "Channel {} was banned successfully from {}".format(
-                    html.escape(message.reply_to_message.sender_chat.title),
-                    html.escape(chat.title),
-                ),
-                parse_mode="html",
-            )
+            await message.reply_text(f"Channel {html.escape(message.reply_to_message.sender_chat.title)} was banned successfully from {html.escape(chat.title)}", parse_mode="html")
+
             return (
                 f"<b>{html.escape(chat.title)}:</b>\n"
                 f"#BANNED\n"
@@ -68,7 +64,7 @@ async def ban(
             await message.reply_text("Failed to ban channel")
         return
 
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
 
     if not user_id:
         await message.reply_text("I doubt that's a user.")
@@ -147,7 +143,7 @@ async def ban(
     return ""
 
 
-@kigcmd(command="tban", pass_args=True)
+@kigcmd(command="tban")
 @connection_status
 @bot_admin
 @can_restrict
@@ -161,7 +157,7 @@ async def temp_ban(update: Update, context: CallbackContext) -> str:
     reason = ""
     bot, args = context.bot, context.args
 
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
 
     if not user_id:
         await message.reply_text("I doubt that's a user.")
@@ -190,7 +186,7 @@ async def temp_ban(update: Update, context: CallbackContext) -> str:
 
     time_val = split_reason[0].lower()
     reason = split_reason[1] if len(split_reason) > 1 else ""
-    bantime = extract_time(message, time_val)
+    bantime = await extract_time(message, time_val)
 
     if not bantime:
         return log_message
@@ -236,7 +232,7 @@ async def temp_ban(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command="kick", pass_args=True)
+@kigcmd(command="kick")
 @connection_status
 @bot_admin
 @can_restrict
@@ -248,7 +244,7 @@ async def kick(update: Update, context: CallbackContext) -> str:
     message = update.effective_message
     log_message = ""
     bot, args = context.bot, context.args
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
 
     if not user_id:
         await message.reply_text("I doubt that's a user.")
@@ -269,8 +265,7 @@ async def kick(update: Update, context: CallbackContext) -> str:
         await message.reply_text("I really wish I could kick this user....")
         return log_message
 
-    res = chat.unban_member(user_id)  # unban on current user = kick
-    if res:
+    if res := await chat.unban_member(user_id):
         # await bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         await bot.sendMessage(
             chat.id,
@@ -294,12 +289,12 @@ async def kick(update: Update, context: CallbackContext) -> str:
     return log_message
 
 
-@kigcmd(command="kickme", pass_args=True, filters=filters.ChatType.GROUPS)
+@kigcmd(command="kickme", filters=filters.ChatType.GROUPS)
 @bot_admin
 @can_restrict
 async def kickme(update: Update, context: CallbackContext):
     user_id = update.effective_message.from_user.id
-    if is_user_admin(update, user_id):
+    if (await is_user_admin(update, user_id)):
         await update.effective_message.reply_text(
             "I wish I could... but you're an admin."
         )
@@ -314,7 +309,7 @@ async def kickme(update: Update, context: CallbackContext):
         await update.effective_message.reply_text("Huh? I can't :/")
 
 
-@kigcmd(command="unban", pass_args=True)
+@kigcmd(command="unban")
 @connection_status
 @bot_admin
 @can_restrict
@@ -331,13 +326,8 @@ async def unban(update: Update, context: CallbackContext) -> Optional[str]:
             chat_id=chat.id, sender_chat_id=message.reply_to_message.sender_chat.id
         )
         if r:
-            await message.reply_text(
-                "Channel {} was unbanned successfully from {}".format(
-                    html.escape(message.reply_to_message.sender_chat.title),
-                    html.escape(chat.title),
-                ),
-                parse_mode="html",
-            )
+            await message.reply_text(f"Channel {html.escape(message.reply_to_message.sender_chat.title)} was unbanned successfully from {html.escape(chat.title)}", parse_mode="html")
+
             return (
                 f"<b>{html.escape(chat.title)}:</b>\n"
                 f"#UNBANNED\n"
@@ -347,7 +337,7 @@ async def unban(update: Update, context: CallbackContext) -> Optional[str]:
         else:
             await message.reply_text("Failed to unban channel")
         return
-    user_id, reason = extract_user_and_text(message, args)
+    user_id, reason = await extract_user_and_text(message, args)
     if not user_id:
         await message.reply_text("I doubt that's a user.")
         return log_message
@@ -391,12 +381,12 @@ async def unban(update: Update, context: CallbackContext) -> Optional[str]:
     return log
 
 
-@kigcmd(command="selfunban", pass_args=True)
+@kigcmd(command="selfunban")
 @connection_status
 @bot_admin
 @can_restrict
 @gloggable
-def selfunban(context: CallbackContext, update: Update) -> Optional[str]:
+async def selfunban(context: CallbackContext, update: Update) -> Optional[str]:
     message = update.effective_message
     user = update.effective_user
     bot, args = context.bot, context.args

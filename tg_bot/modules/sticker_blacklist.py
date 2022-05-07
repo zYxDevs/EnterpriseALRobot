@@ -1,11 +1,11 @@
 import html
 from typing import Optional
 
-from telegram import Chat, Message, ParseMode, Update, User, ChatPermissions
+from telegram import Chat, Message, Update, User, ChatPermissions
 from telegram.error import BadRequest
-from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler
-from telegram.utils.helpers import mention_html, mention_markdown
-
+from telegram.ext import CallbackContext, CommandHandler, filters, MessageHandler
+from telegram.helpers import mention_html, mention_markdown
+from telegram.constants import ParseMode
 import tg_bot.modules.sql.blsticker_sql as sql
 from tg_bot import log as LOGGER, application
 from tg_bot.modules.connection import connected
@@ -29,7 +29,7 @@ async def blackliststicker(update: Update, context: CallbackContext):
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     bot, args = context.bot, context.args
-    conn = connected(bot, update, chat, user.id, need_admin=False)
+    conn = await connected(bot, update, chat, user.id, need_admin=False)
     if conn:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -76,7 +76,7 @@ async def add_blackliststicker(update: Update, context: CallbackContext):
     user = update.effective_user  # type: Optional[User]
     words = msg.text.split(None, 1)
     bot = context.bot
-    conn = connected(bot, update, chat, user.id)
+    conn = await connected(bot, update, chat, user.id)
     if conn:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -170,7 +170,7 @@ async def unblackliststicker(update: Update, context: CallbackContext):
     user = update.effective_user  # type: Optional[User]
     words = msg.text.split(None, 1)
     bot = context.bot
-    conn = connected(bot, update, chat, user.id)
+    conn = await connected(bot, update, chat, user.id)
     if conn:
         chat_id = conn
         chat_name = await application.bot.getChat(conn).title
@@ -271,7 +271,7 @@ async def blacklist_mode(update: Update, context: CallbackContext):
     user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
     bot, args = context.bot, context.args
-    conn = connected(bot, update, chat, user.id, need_admin=True)
+    conn = await connected(bot, update, chat, user.id, need_admin=True)
     if conn:
         chat = await application.bot.getChat(conn)
         chat_id = conn
@@ -458,7 +458,7 @@ async def del_blackliststicker(update: Update, context: CallbackContext):
                     return
                 elif getmode == 6:
                     await message.delete()
-                    bantime = extract_time(message, value)
+                    bantime = await extract_time(message, value)
                     chat.ban_member(user.id, until_date=bantime)
                     await bot.sendMessage(
                         chat.id,
@@ -472,7 +472,7 @@ async def del_blackliststicker(update: Update, context: CallbackContext):
                     return
                 elif getmode == 7:
                     await message.delete()
-                    mutetime = extract_time(message, value)
+                    mutetime = await extract_time(message, value)
                     await bot.restrict_chat_member(
                         chat.id,
                         user.id,

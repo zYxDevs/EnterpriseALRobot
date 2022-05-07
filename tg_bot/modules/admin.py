@@ -1,7 +1,7 @@
 import html
 from typing import Optional
-
-from telegram import ParseMode, Update
+from telegram.constants import ParseMode
+from telegram import Update
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext
 from telegram.helpers import escape_markdown, mention_html
@@ -208,7 +208,7 @@ async def set_title(update: Update, context: CallbackContext):
     chat = update.effective_chat
     message = update.effective_message
 
-    user_id, title = extract_user_and_text(message, args)
+    user_id, title = await extract_user_and_text(message, args)
     try:
         user_member = chat.get_member(user_id)
     except:

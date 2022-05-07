@@ -4,10 +4,10 @@ from typing import Optional
 from datetime import timedelta
 from pytimeparse.timeparse import timeparse
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
-from telegram.utils.helpers import mention_html
-
+from telegram.helpers import mention_html
+from telegram.constants import ParseMode
 from .log_channel import loggable
 from .helper_funcs.anonymous import user_admin, AdminPerms
 from .helper_funcs.chat_status import bot_admin, connection_status, user_admin_no_reply
@@ -36,7 +36,7 @@ def get_readable_time(time: int) -> str:
     return "{} hour(s)".format(t[0]) if time >= 3600 else "{} minutes".format(t[1])
 
 
-@kigcmd(command="raid", pass_args=True)
+@kigcmd(command="raid")
 @bot_admin
 @connection_status
 @loggable
@@ -138,7 +138,7 @@ async def setRaid(update: Update, context: CallbackContext) -> Optional[str]:
 @connection_status
 @user_admin_no_reply
 @loggable
-def enable_raid_cb(update: Update, ctx: CallbackContext) -> Optional[str]:
+async def enable_raid_cb(update: Update, ctx: CallbackContext) -> Optional[str]:
     args = await update.callback_query.data.replace("enable_raid=", "").split("=")
     chat = update.effective_chat
     user = update.effective_user
@@ -258,7 +258,7 @@ async def raidtime(update: Update, context: CallbackContext) -> Optional[str]:
         )
 
 
-@kigcmd(command="raidactiontime", pass_args=True)
+@kigcmd(command="raidactiontime")
 @connection_status
 @user_admin(AdminPerms.CAN_CHANGE_INFO)
 @loggable

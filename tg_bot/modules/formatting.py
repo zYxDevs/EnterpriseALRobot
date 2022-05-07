@@ -1,10 +1,10 @@
 from tg_bot.modules.helper_funcs.decorators import kigcallback
 from telegram import (
-    ParseMode,
     Update,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext
 from tg_bot.modules.language import gs
 

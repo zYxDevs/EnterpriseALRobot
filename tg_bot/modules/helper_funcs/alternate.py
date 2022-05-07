@@ -1,8 +1,9 @@
 from functools import wraps
-from telegram import error, ChatAction
+from telegram import error
+from telegram.constants import ChatAction
 
 
-def send_message(message, text, *args, **kwargs):
+async def send_message(message, text, *args, **kwargs):
     try:
         return await message.reply_text(text, *args, **kwargs)
     except error.BadRequest as err:
@@ -14,7 +15,7 @@ def typing_action(func):
     """Sends typing action while processing func command."""
 
     @wraps(func)
-    def command_func(update, context, *args, **kwargs):
+    async def command_func(update, context, *args, **kwargs):
         await context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
         )
@@ -28,7 +29,7 @@ def send_action(action):
 
     def decorator(func):
         @wraps(func)
-        def command_func(update, context, *args, **kwargs):
+        async def command_func(update, context, *args, **kwargs):
             await context.bot.send_chat_action(
                 chat_id=update.effective_chat.id, action=action
             )

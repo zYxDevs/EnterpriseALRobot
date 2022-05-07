@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import sys
@@ -8,7 +9,7 @@ import telegram.ext as tg
 from telethon import TelegramClient
 from telethon.sessions import MemorySession
 from configparser import ConfigParser
-from ptbcontrib.postgres_persistence import PostgresPersistence
+# from ptbcontrib.postgres_persistence import PostgresPersistence
 from logging.config import fileConfig
 
 StartTime = time.time()
@@ -160,10 +161,10 @@ app = (
     .token(TOKEN)
     .base_url(KInit.BOT_API_URL)
     .base_file_url(KInit.BOT_API_FILE_URL)
-    .persistence(persistence=PostgresPersistence(session=SESSION))
     .build()
 )
 
+asyncio.get_event_loop().run_until_complete(app.bot.initialize())
 
 # Load at end to ensure all prev variables have been set
 from tg_bot.modules.helper_funcs.handlers import CustomCommandHandler
