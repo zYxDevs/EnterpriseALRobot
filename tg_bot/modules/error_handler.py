@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CallbackContext, CommandHandler
 from psycopg2 import errors as sqlerrors
 from tg_bot import KInit, DEV_USERS, OWNER_ID, log
-from tg_bot.__init__ import app as application
+from tg_bot import app as application
 
 
 

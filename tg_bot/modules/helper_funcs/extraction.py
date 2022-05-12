@@ -74,7 +74,7 @@ async def extract_user_and_text(
         return None, None
 
     try:
-        await message.bot.get_chat(user_id)
+        await message._bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found"):
             await message.reply_text(
@@ -148,7 +148,7 @@ async def extract_unt_fedban(
         return None, None
 
     try:
-        await message.bot.get_chat(user_id)
+        await message._bot.get_chat(user_id)
     except BadRequest as excp:
         if excp.message in ("User_id_invalid", "Chat not found") and not isinstance(
             user_id, int

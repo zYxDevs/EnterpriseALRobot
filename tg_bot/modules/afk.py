@@ -14,7 +14,7 @@ from tg_bot.modules.helper_funcs.decorators import kigcmd, kigmsg
 @kigmsg(filters.Regex("(?i)^brb"), friendly="afk", group=3)
 @kigcmd(command="afk", group=3)
 async def afk(update: Update, context: CallbackContext):
-    args = await update.effective_message.text.split(None, 1)
+    args = update.effective_message.text.split(None, 1)
     user = update.effective_user
 
     if not user:  # ignore channels
@@ -46,7 +46,7 @@ async def no_longer_afk(update: Update, context: CallbackContext):
     if not user:  # ignore channels
         return
 
-    if res := sql.rm_afk(user.id):
+    if sql.rm_afk(user.id):
         if message.new_chat_members:  # dont say msg
             return
         firstname = update.effective_user.first_name

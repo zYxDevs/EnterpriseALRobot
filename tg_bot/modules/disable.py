@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union
+from typing import Optional, Union
 
 from future.utils import string_types
 from telegram import Update, Chat
@@ -61,15 +61,15 @@ if is_module_loaded(FILENAME):
                 ):
                     args = message.text.split()[1:]
                     command = fst_word[1:].split("@")
-                    command.append(message.bot.username)
+                    command.append(message._bot.username)
 
                     if not (
                         command[0].lower() in self.command
-                        and command[1].lower() == message.bot.username.lower()
+                        and command[1].lower() == message._bot.username.lower()
                     ):
                         return None
 
-                    if filter_result := self.filters(update):
+                    if filter_result := self.filters.check_update(update):
                         chat = update.effective_chat
                         user = update.effective_user
                         # disabled, admincmd, user admin
@@ -93,7 +93,7 @@ if is_module_loaded(FILENAME):
         def check_update(self, update):
             if isinstance(update, Update) and update.effective_message:
                 chat = update.effective_chat
-                return self.filters(update) and not sql.is_command_disabled(
+                return self.filters.check_update(update) and not sql.is_command_disabled(
                     chat.id, self.friendly
                 )
 
@@ -170,11 +170,9 @@ if is_module_loaded(FILENAME):
 
             if sql.enable_command(chat.id, enable_cmd):
                 if conn:
-                    text = "Enabled the use of `{}` command in *{}*!".format(
-                        enable_cmd, chat_name
-                    )
+                    text = f"Enabled the use of `{enable_cmd}` command in *{chat_name}*!"
                 else:
-                    text = "Enabled the use of `{}` command!".format(enable_cmd)
+                    text = f"Enabled the use of `{enable_cmd}` command!"
                 send_message(
                     update.effective_message,
                     text,
@@ -238,9 +236,7 @@ if is_module_loaded(FILENAME):
             sql.disable_command(chat_id, disable_cmd)
 
     def __stats__():
-        return "• {} disabled items, across {} chats.".format(
-            sql.num_disabled(), sql.num_chats()
-        )
+        return f"• {sql.num_disabled()} disabled items, across {sql.num_chats()} chats."
 
     def __migrate__(old_chat_id, new_chat_id):
         sql.migrate_chat(old_chat_id, new_chat_id)

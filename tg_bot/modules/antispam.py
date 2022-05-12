@@ -18,6 +18,7 @@ from tg_bot import (
     log,
 )
 from tg_bot.modules.helper_funcs.chat_status import (
+    bot_admin,
     is_user_admin,
     support_plus,
 )
@@ -456,12 +457,12 @@ async def check_and_ban(update, user_id, should_message=True):
 @kigmsg(
     (filters.ALL & filters.ChatType.GROUPS), can_disable=False, group=GBAN_ENFORCE_GROUP
 )
+@bot_admin
 async def enforce_gban(update: Update, context: CallbackContext):
     # Not using @restrict handler to avoid spamming - just ignore if cant gban.
     bot = context.bot
     if (
         sql.does_chat_gban(update.effective_chat.id)
-        and await update.effective_chat.get_member(bot.id).can_restrict_members
     ):
         user = update.effective_user
         chat = update.effective_chat

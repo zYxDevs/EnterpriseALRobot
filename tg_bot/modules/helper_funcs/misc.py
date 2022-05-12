@@ -55,7 +55,7 @@ def split_message(msg: str) -> List[str]:
     return result
 
 
-def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
+def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List[List[EqInlineKeyboardButton]]:
     modules = (
         sorted(
             [
@@ -78,7 +78,7 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
         )
     )
 
-    pairs = list(zip(modules[::3], modules[1::3], modules[2::3]))
+    pairs = [list (a) for a in zip(modules[::3], modules[1::3], modules[2::3])]
     i = 0
     for m in pairs:
         for _ in m:

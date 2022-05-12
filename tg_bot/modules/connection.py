@@ -68,7 +68,7 @@ async def connection_chat(update, context):
     chat = update.effective_chat
     user = update.effective_user
 
-    conn = connected(context.bot, update, chat, user.id, need_admin=True)
+    conn = await connected(context.bot, update, chat, user.id, need_admin=True)
 
     if conn:
         chat = await application.bot.getChat(conn)

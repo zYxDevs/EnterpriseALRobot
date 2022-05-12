@@ -81,12 +81,12 @@ class CustomCommandHandler(tg.CommandHandler):
                 args = message.text.split()[1:]
                 command = fst_word[1:].split("@")
                 command.append(
-                    message.bot.username
+                    message._bot.username
                 )  # in case the command was sent without a username
 
                 if not (
                     command[0].lower() in self.command
-                    and command[1].lower() == message.bot.username.lower()
+                    and command[1].lower() == message._bot.username.lower()
                 ):
                     return None
 

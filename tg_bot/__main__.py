@@ -6,7 +6,6 @@ Dank-del
 """
 
 
-
 import asyncio
 import contextlib
 import importlib
@@ -134,7 +133,7 @@ async def test(update: Update, _: CallbackContext):
 
 @kigcallback(pattern=r"start_back")
 @kigcmd(command="start")
-async def start(update: Update, context: CallbackContext):    # sourcery no-metrics
+async def start(update: Update, context: CallbackContext):  # sourcery no-metrics
     """#TODO
 
     Params:
@@ -148,8 +147,46 @@ async def start(update: Update, context: CallbackContext):    # sourcery no-metr
         query = update.callback_query
         if hasattr(query, "id"):
             first_name = update.effective_user.first_name
-            await update.effective_message.edit_text(text=gs(chat.id, "pm_start_text").format(escape_markdown(first_name), escape_markdown(context.bot.first_name), OWNER_ID,), parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=gs(chat.id, "support_chat_link_btn"), url="https://t.me/YorktownEagleUnion",), InlineKeyboardButton(text=gs(chat.id, "updates_channel_link_btn"), url="https://t.me/KigyoUpdates",), InlineKeyboardButton(text=gs(chat.id, "src_btn"), url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",),], [InlineKeyboardButton(text="Try inline", switch_inline_query_current_chat="",), InlineKeyboardButton(text="Help", callback_data="help_back",), InlineKeyboardButton(text=gs(chat.id, "add_bot_to_group_btn"), url=f"t.me/{context.bot.username}?startgroup=true")]]))
-
+            await update.effective_message.edit_text(
+                text=gs(chat.id, "pm_start_text").format(
+                    escape_markdown(first_name),
+                    escape_markdown(context.bot.first_name),
+                    OWNER_ID,
+                ),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "support_chat_link_btn"),
+                                url="https://t.me/YorktownEagleUnion",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "updates_channel_link_btn"),
+                                url="https://t.me/KigyoUpdates",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "src_btn"),
+                                url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",
+                            ),
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                text="Try inline",
+                                switch_inline_query_current_chat="",
+                            ),
+                            InlineKeyboardButton(
+                                text="Help",
+                                callback_data="help_back",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "add_bot_to_group_btn"),
+                                url=f"t.me/{context.bot.username}?startgroup=true",
+                            ),
+                        ],
+                    ]
+                ),
+            )
 
             await context.bot.answer_callback_query(query.id)
             return
@@ -201,7 +238,7 @@ async def start(update: Update, context: CallbackContext):    # sourcery no-metr
                 match = re.match("stngs_(.*)", args[0].lower())
                 chat = await application.bot.getChat(match.group(1))
 
-                if (await is_user_admin(update, update.effective_user.id)):
+                if await is_user_admin(update, update.effective_user.id):
                     send_settings(match.group(1), update.effective_user.id, False)
                 else:
                     send_settings(match.group(1), update.effective_user.id, True)
@@ -211,8 +248,46 @@ async def start(update: Update, context: CallbackContext):    # sourcery no-metr
 
         else:
             first_name = update.effective_user.first_name
-            await update.effective_message.reply_text(text=gs(chat.id, "pm_start_text").format(escape_markdown(first_name), escape_markdown(context.bot.first_name), OWNER_ID,), parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text=gs(chat.id, "support_chat_link_btn"), url="https://t.me/YorktownEagleUnion",), InlineKeyboardButton(text=gs(chat.id, "updates_channel_link_btn"), url="https://t.me/KigyoUpdates",), InlineKeyboardButton(text=gs(chat.id, "src_btn"), url="https://github.com/Dank-del/EnterpriseALRobot",),], [InlineKeyboardButton(text="Try inline", switch_inline_query_current_chat="",), InlineKeyboardButton(text="Help", callback_data="help_back",), InlineKeyboardButton(text=gs(chat.id, "add_bot_to_group_btn"), url=f"t.me/{context.bot.username}?startgroup=true")]]))
-
+            await update.effective_message.reply_text(
+                text=gs(chat.id, "pm_start_text").format(
+                    escape_markdown(first_name),
+                    escape_markdown(context.bot.first_name),
+                    OWNER_ID,
+                ),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "support_chat_link_btn"),
+                                url="https://t.me/YorktownEagleUnion",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "updates_channel_link_btn"),
+                                url="https://t.me/KigyoUpdates",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "src_btn"),
+                                url="https://github.com/Dank-del/EnterpriseALRobot",
+                            ),
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                text="Try inline",
+                                switch_inline_query_current_chat="",
+                            ),
+                            InlineKeyboardButton(
+                                text="Help",
+                                callback_data="help_back",
+                            ),
+                            InlineKeyboardButton(
+                                text=gs(chat.id, "add_bot_to_group_btn"),
+                                url=f"t.me/{context.bot.username}?startgroup=true",
+                            ),
+                        ],
+                    ]
+                ),
+            )
 
     else:
         await update.effective_message.reply_text(gs(chat.id, "grp_start_text"))
@@ -348,7 +423,7 @@ async def get_help(update: Update, context: CallbackContext):
     """
 
     chat = update.effective_chat  # type: Optional[Chat]
-    args = await update.effective_message.text.split(None, 1)
+    args = update.effective_message.text.split(None, 1)
 
     # ONLY send help in PM
     if chat.type != chat.PRIVATE:
@@ -356,7 +431,19 @@ async def get_help(update: Update, context: CallbackContext):
         if len(args) >= 2:
             if any(args[1].lower() == x for x in HELPABLE):
                 module = args[1].lower()
-                await update.effective_message.reply_text(f"Contact me in PM to get help of {module.capitalize()}", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Help", url=f"t.me/{context.bot.username}?start=ghelp_{module}")]]))
+                await update.effective_message.reply_text(
+                    f"Contact me in PM to get help of {module.capitalize()}",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    text="Help",
+                                    url=f"t.me/{context.bot.username}?start=ghelp_{module}",
+                                )
+                            ]
+                        ]
+                    ),
+                )
 
             else:
                 await update.effective_message.reply_text(
@@ -365,7 +452,18 @@ async def get_help(update: Update, context: CallbackContext):
                 )
             return
 
-        await update.effective_message.reply_text("Contact me in PM to get the list of possible commands.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Help", url=f"t.me/{context.bot.username}?start=help")]]))
+        await update.effective_message.reply_text(
+            "Contact me in PM to get the list of possible commands.",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text="Help", url=f"t.me/{context.bot.username}?start=help"
+                        )
+                    ]
+                ]
+            ),
+        )
 
         return
 
@@ -522,14 +620,23 @@ async def settings_button(update: Update, context: CallbackContext):
         elif back_match:
             chat_id = back_match.group(1)
             chat = await bot.get_chat(chat_id)
-            await query.message.reply_text(text=f"Hi there! There are quite a few settings for {escape_markdown(chat.title)} - go ahead and pick what you're interested in.", parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)))
-
+            await query.message.reply_text(
+                text=f"Hi there! There are quite a few settings for {escape_markdown(chat.title)} - go ahead and pick what you're interested in.",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup(
+                    paginate_modules(0, CHAT_SETTINGS, "stngs", chat=chat_id)
+                ),
+            )
 
         # ensure no spinny white circle
         await bot.answer_callback_query(query.id)
         await query.message.delete()
     except BadRequest as excp:
-        if excp.message not in ["Message is not modified", "Query_id_invalid", "Message can't be deleted"]:
+        if excp.message not in [
+            "Message is not modified",
+            "Query_id_invalid",
+            "Message can't be deleted",
+        ]:
             log.exception("Exception in settings buttons. %s", str(query.data))
 
 
@@ -550,9 +657,21 @@ async def get_settings(update: Update, context: CallbackContext):
     if chat.type == chat.PRIVATE:
         send_settings(chat.id, user.id, True)
 
-    elif (await is_user_admin(update, user.id)):
+    elif await is_user_admin(update, user.id):
         text = "Click here to get this chat's settings, as well as yours."
-        msg.reply_text(text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Settings", url=f"t.me/{context.bot.username}?start=stngs_{chat.id}")]]))
+        msg.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text="Settings",
+                            url=f"t.me/{context.bot.username}?start=stngs_{chat.id}",
+                        )
+                    ]
+                ]
+            ),
+        )
 
     else:
         text = "Click here to check your settings."
@@ -613,17 +732,17 @@ def main():
         KInit.bot_name = app.bot.first_name
         log.info(f"Kigyo started, Using long polling. | BOT: [@{app.bot.username}]")
         # app.run_polling(drop_pending_updates=KInit.DROP_UPDATES, stop_signals=None)
-    if len(argv) in {1, 3, 4}:
+    # if len(argv) in {1, 3, 4}:
     #    await telethn.start(bot_token=TOKEN)
-        telethn.run_until_disconnected()
-    else:
-        telethn.disconnect()
+    #     telethn.run_until_disconnected()
+    # else:
+    #     telethn.disconnect()
     # app.idle()
     # await app.updater.start_polling(drop_pending_updates=KInit.DROP_UPDATES)
 
 
 if __name__ == "__main__":
     log.info(f"[KIGYO] Successfully loaded modules: {str(ALL_MODULES)}")
-    telethn.start(bot_token=TOKEN)
+    # telethn.start(bot_token=TOKEN)
     main()
     # asyncio.run(main())
