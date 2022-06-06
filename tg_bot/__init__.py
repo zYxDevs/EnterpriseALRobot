@@ -93,12 +93,10 @@ class KigyoINIT:
             return None
         else:
             try:
-                sw = spamwatch.Client(spamwatch_api)
-                return sw
+                return spamwatch.Client(spamwatch_api)
             except:
-                sw = None
                 log.warning("Can't connect to SpamWatch!")
-                return sw
+                return None
 
 
 KInit = KigyoINIT(parser=kigconfig)
@@ -141,12 +139,25 @@ sw = KInit.init_sw()
 
 from tg_bot.modules.sql import SESSION
 
-if not KInit.DROP_UPDATES:
-    updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10}, persistence=PostgresPersistence(session=SESSION))
-    
-else:
-    updater = tg.Updater(token=TOKEN, base_url=KInit.BOT_API_URL, base_file_url=KInit.BOT_API_FILE_URL, workers=min(32, os.cpu_count() + 4), request_kwargs={"read_timeout": 10, "connect_timeout": 10})
-    
+updater = (
+    tg.Updater(
+        token=TOKEN,
+        base_url=KInit.BOT_API_URL,
+        base_file_url=KInit.BOT_API_FILE_URL,
+        workers=min(32, os.cpu_count() + 4),
+        request_kwargs={"read_timeout": 10, "connect_timeout": 10},
+    )
+    if KInit.DROP_UPDATES
+    else tg.Updater(
+        token=TOKEN,
+        base_url=KInit.BOT_API_URL,
+        base_file_url=KInit.BOT_API_FILE_URL,
+        workers=min(32, os.cpu_count() + 4),
+        request_kwargs={"read_timeout": 10, "connect_timeout": 10},
+        persistence=PostgresPersistence(session=SESSION),
+    )
+)
+
 telethn = TelegramClient(MemorySession(), APP_ID, API_HASH)
 dispatcher = updater.dispatcher
 

@@ -105,7 +105,7 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
         message.reply_text("That's a Neptunia! They cannot be banned!")
         return
 
-    if int(user_id) in (777000, 1087968824):
+    if int(user_id) in {777000, 1087968824}:
         message.reply_text("Huh, why would I gban Telegram bots?")
         return
 
@@ -133,10 +133,9 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
             )
             return
 
-        old_reason = sql.update_gban_reason(
+        if old_reason := sql.update_gban_reason(
             user_id, user_chat.username or user_chat.first_name, reason
-        )
-        if old_reason:
+        ):
             message.reply_text(
                 "This user is already gbanned, for the following reason:\n"
                 "<code>{}</code>\n"
@@ -230,9 +229,10 @@ def gban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if GBAN_LOGS:
         log.edit_text(
-            log_message + f"\n<b>Chats affected:</b> <code>{gbanned_chats}</code>",
+            f"{log_message}\n<b>Chats affected:</b> <code>{gbanned_chats}</code>",
             parse_mode=ParseMode.HTML,
         )
+
     else:
         send_to_list(
             bot,
@@ -355,9 +355,10 @@ def ungban(update: Update, context: CallbackContext):  # sourcery no-metrics
 
     if GBAN_LOGS:
         log.edit_text(
-            log_message + f"\n<b>Chats affected:</b> {ungbanned_chats}",
+            f"{log_message}\n<b>Chats affected:</b> {ungbanned_chats}",
             parse_mode=ParseMode.HTML,
         )
+
     else:
         send_to_list(bot, SUDO_USERS + SUPPORT_USERS, "un-gban complete!")
 

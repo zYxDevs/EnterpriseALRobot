@@ -23,18 +23,25 @@ def set_antilinkedchannel(update: Update, context: CallbackContext):
             if sql.status_pin(chat.id):
                 sql.disable_pin(chat.id)
                 sql.enable_pin(chat.id)
-                message.reply_html("Enabled Linked channel deletion and Disabled anti channel pin in {}".format(html.escape(chat.title)))
+                message.reply_html(
+                    f"Enabled Linked channel deletion and Disabled anti channel pin in {html.escape(chat.title)}"
+                )
+
             else:
                 sql.enable_linked(chat.id)
-                message.reply_html("Enabled anti linked channel in {}".format(html.escape(chat.title)))
+                message.reply_html(f"Enabled anti linked channel in {html.escape(chat.title)}")
         elif s in ["off", "no"]:
             sql.disable_linked(chat.id)
-            message.reply_html("Disabled anti linked channel in {}".format(html.escape(chat.title)))
+            message.reply_html(
+                f"Disabled anti linked channel in {html.escape(chat.title)}"
+            )
+
         else:
-            message.reply_text("Unrecognized arguments {}".format(s))
+            message.reply_text(f"Unrecognized arguments {s}")
         return
     message.reply_html(
-        "Linked channel deletion is currently {} in {}".format(sql.status_linked(chat.id), html.escape(chat.title)))
+        f"Linked channel deletion is currently {sql.status_linked(chat.id)} in {html.escape(chat.title)}"
+    )
 
 
 @kigmsg(Filters.is_automatic_forward, group=111)
@@ -61,18 +68,22 @@ def set_antipinchannel(update: Update, context: CallbackContext):
             if sql.status_linked(chat.id):
                 sql.disable_linked(chat.id)
                 sql.enable_pin(chat.id)
-                message.reply_html("Disabled Linked channel deletion and Enabled anti channel pin in {}".format(html.escape(chat.title)))
+                message.reply_html(
+                    f"Disabled Linked channel deletion and Enabled anti channel pin in {html.escape(chat.title)}"
+                )
+
             else:
                 sql.enable_pin(chat.id)
-                message.reply_html("Enabled anti channel pin in {}".format(html.escape(chat.title)))
+                message.reply_html(f"Enabled anti channel pin in {html.escape(chat.title)}")
         elif s in ["off", "no"]:
             sql.disable_pin(chat.id)
-            message.reply_html("Disabled anti channel pin in {}".format(html.escape(chat.title)))
+            message.reply_html(f"Disabled anti channel pin in {html.escape(chat.title)}")
         else:
-            message.reply_text("Unrecognized arguments {}".format(s))
+            message.reply_text(f"Unrecognized arguments {s}")
         return
     message.reply_html(
-        "Linked channel message unpin is currently {} in {}".format(sql.status_pin(chat.id), html.escape(chat.title)))
+        f"Linked channel message unpin is currently {sql.status_pin(chat.id)} in {html.escape(chat.title)}"
+    )
 
 
 @kigmsg(Filters.is_automatic_forward | Filters.status_update.pinned_message, group=113)

@@ -208,21 +208,22 @@ def about(query: str, update: Update, context: CallbackContext) -> None:
     Built with ❤️ using python-telegram-bot v{str(__version__)}
     Running on Python {python_version()}
     """
-    results: list = []
     kb = InlineKeyboardMarkup([[InlineKeyboardButton(text="Support", url="https://t.me/YorktownEagleUnion"), InlineKeyboardButton(text="Channel", url="https://t.me/KigyoUpdates"), InlineKeyboardButton(text='Ping', callback_data='pingCB')], [InlineKeyboardButton(text="GitLab", url="https://www.gitlab.com/Dank-del/EnterpriseALRobot"), InlineKeyboardButton(text="GitHub", url="https://github.com/AnimeKaizoku/EnterpriseALRobot/",)]])
 
 
-    results.append(
-
-        InlineQueryResultArticle
-            (
+    results: list = [
+        InlineQueryResultArticle(
             id=str(uuid4()),
             title=f"About Kigyo (@{context.bot.username})",
-            input_message_content=InputTextMessageContent(about_text, parse_mode=ParseMode.MARKDOWN,
-                                                          disable_web_page_preview=True),
-            reply_markup=kb
+            input_message_content=InputTextMessageContent(
+                about_text,
+                parse_mode=ParseMode.MARKDOWN,
+                disable_web_page_preview=True,
+            ),
+            reply_markup=kb,
         )
-    )
+    ]
+
     update.inline_query.answer(results)
 
 

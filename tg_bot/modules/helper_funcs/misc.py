@@ -46,30 +46,27 @@ def split_message(msg: str) -> List[str]:
 
 
 def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
-    if not chat:
-            modules = sorted(
+    modules = (
+        sorted(
             [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
-                    callback_data="{}_module({})".format(
-                        prefix, x.__mod_name__.replace(" ", "_").lower()
-                    ),
+                    callback_data=f'{prefix}_module({chat},{x.__mod_name__.replace(" ", "_").lower()})',
                 )
                 for x in module_dict.values()
             ]
         )
-    else:
-            modules = sorted(
-                 [
+        if chat
+        else sorted(
+            [
                 EqInlineKeyboardButton(
                     x.__mod_name__,
-                    callback_data="{}_module({},{})".format(
-                        prefix, chat, x.__mod_name__.replace(" ", "_").lower()
-                    ),
+                    callback_data=f'{prefix}_module({x.__mod_name__.replace(" ", "_").lower()})',
                 )
                 for x in module_dict.values()
             ]
-             )
+        )
+    )
 
     pairs = list(zip(modules[::3], modules[1::3], modules[2::3]))
     i = 0
@@ -98,19 +95,18 @@ def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
         ] + [
             (
                 EqInlineKeyboardButton(
-                    "❮",
-                    callback_data="{}_prev({})".format(prefix, modulo_page),
+                    "❮", callback_data=f"{prefix}_prev({modulo_page})"
                 ),
                 EqInlineKeyboardButton(
                     "Back",
                     callback_data="start_back",
                 ),
                 EqInlineKeyboardButton(
-                    "❯",
-                    callback_data="{}_next({})".format(prefix, modulo_page),
+                    "❯", callback_data=f"{prefix}_next({modulo_page})"
                 ),
             )
         ]
+
 
     return pairs
 
@@ -176,7 +172,7 @@ def build_keyboard_parser(bot, chat_id, buttons):
     keyb = []
     for btn in buttons:
         if btn.url == "{rules}":
-            btn.url = "http://t.me/{}?start={}".format(bot.username, chat_id)
+            btn.url = f"http://t.me/{bot.username}?start={chat_id}"
         if btn.same_line and keyb:
             keyb[-1].append(InlineKeyboardButton(btn.name, url=btn.url))
         else:
