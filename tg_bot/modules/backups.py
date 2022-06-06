@@ -73,9 +73,8 @@ def import_data(update, context):
         try:
             if data.get(str(chat.id)) is None:
                 if conn:
-                    text = "Backup comes from another chat, I can't return another chat to chat *{}*".format(
-                        chat_name,
-                    )
+                    text = f"Backup comes from another chat, I can't return another chat to chat *{chat_name}*"
+
                 else:
                     text = "Backup comes from another chat, I can't return another chat to this chat"
                 return msg.reply_text(text, parse_mode="markdown")
@@ -100,8 +99,9 @@ def import_data(update, context):
                 mod.__import_data__(str(chat.id), data)
         except Exception:
             msg.reply_text(
-                f"An error occurred while recovering your data. The process failed. If you experience a problem with this, please take it to @YorkTownEagleUnion",
+                "An error occurred while recovering your data. The process failed. If you experience a problem with this, please take it to @YorkTownEagleUnion"
             )
+
 
             LOGGER.exception(
                 "Imprt for the chat %s with the name %s failed.",
@@ -114,7 +114,7 @@ def import_data(update, context):
         # NOTE: consider default permissions stuff?
         if conn:
 
-            text = "Backup fully restored on *{}*.".format(chat_name)
+            text = f"Backup fully restored on *{chat_name}*."
         else:
             text = "Backup fully restored"
         msg.reply_text(text, parse_mode="markdown")

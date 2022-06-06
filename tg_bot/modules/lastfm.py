@@ -11,9 +11,8 @@ import tg_bot.modules.sql.last_fm_sql as sql
 
 @kigcmd(command='setuser')
 def set_user(update: Update, context: CallbackContext):
-    args = context.args
     msg = update.effective_message
-    if args:
+    if args := context.args:
         user = update.effective_user.id
         username = " ".join(args)
         sql.set_user(user, username)
@@ -63,10 +62,12 @@ def last_fm(update: Update, _):
         song = first_track.get("name")
         loved = int(first_track.get("loved"))
         rep = f"{user} is currently listening to:\n"
-        if not loved:
-            rep += f"🎧  <code>{artist} - {song}</code>"
-        else:
-            rep += f"🎧  <code>{artist} - {song}</code> (♥️, loved)"
+        rep += (
+            f"🎧  <code>{artist} - {song}</code> (♥️, loved)"
+            if loved
+            else f"🎧  <code>{artist} - {song}</code>"
+        )
+
         if image:
             rep += f"<a href='{image}'>\u200c</a>"
     else:

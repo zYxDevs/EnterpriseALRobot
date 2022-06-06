@@ -349,7 +349,7 @@ def invite(update: Update, context: CallbackContext):
 @kigcmd(command=["admin", "admins"])
 def adminlist(update: Update, _):
     administrators = update.effective_chat.get_administrators()
-    text = "Admins in *{}*:".format(update.effective_chat.title or "this chat")
+    text = f'Admins in *{update.effective_chat.title or "this chat"}*:'
     for admin in administrators:
         if not admin.is_anonymous:
             user = admin.user

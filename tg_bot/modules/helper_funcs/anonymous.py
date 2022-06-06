@@ -36,16 +36,13 @@ def user_admin(permission: AdminPerms):
             if update.effective_chat.type == 'private':
                 return func(update, context, *args, **kwargs)
             message = update.effective_message
-            is_anon = update.effective_message.sender_chat
-
-            if is_anon:
+            if is_anon := update.effective_message.sender_chat:
                 callback_id = f'anoncb/{message.chat.id}/{message.message_id}/{permission.value}'
                 anon_callbacks[(message.chat.id, message.message_id)] = ((update, context), func)
                 anon_callback_messages[(message.chat.id, message.message_id)] = (
                     message.reply_text("Seems like you're anonymous, click the button below to prove your identity",
                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text='Prove identity',
                                                                                                 callback_data=callback_id)]]))).message_id
-                # send message with callback f'anoncb{callback_id}'
             else:
                 user_id = message.from_user.id
                 chat_id = message.chat.id
@@ -77,8 +74,7 @@ def anon_callback_handler1(upd: Update, _: CallbackContext):
         dispatcher.bot.delete_message(chat_id, anon_callback_messages.pop((chat_id, message_id), None))
         dispatcher.bot.send_message(chat_id, "You lack the permissions required for this command")
     elif getattr(mem, perm) is True or mem.status == "creator" or mem.user.id in DEV_USERS:
-        cb = anon_callbacks.pop((chat_id, message_id), None)
-        if cb:
+        if cb := anon_callbacks.pop((chat_id, message_id), None):
             message_id = anon_callback_messages.pop((chat_id, message_id), None)
             if message_id is not None:
                 dispatcher.bot.delete_message(chat_id, message_id)

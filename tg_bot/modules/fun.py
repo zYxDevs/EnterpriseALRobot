@@ -33,8 +33,12 @@ def slap(update: Update, context: CallbackContext):
         else message.reply_text
     )
 
-    curr_user = html.escape(message.from_user.first_name) if not message.sender_chat else html.escape(
-        message.sender_chat.title)
+    curr_user = (
+        html.escape(message.sender_chat.title)
+        if message.sender_chat
+        else html.escape(message.from_user.first_name)
+    )
+
     user_id = extract_user(message, args)
 
     if user_id == bot.id:
@@ -62,7 +66,7 @@ def slap(update: Update, context: CallbackContext):
 
         slapped_user = bot.get_chat(user_id)
         user1 = curr_user
-        user2 = html.escape(slapped_user.first_name if slapped_user.first_name else slapped_user.title)
+        user2 = html.escape(slapped_user.first_name or slapped_user.title)
 
     else:
         user1 = bot.first_name

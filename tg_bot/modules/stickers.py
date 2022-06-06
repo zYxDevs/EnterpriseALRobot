@@ -47,12 +47,7 @@ def getsticker(update: Update, context: CallbackContext):
         sticker_data = new_file.download(out=BytesIO())
         # go back to the start of the buffer
         sticker_data.seek(0)
-        # Reply with the document. Telegram INSISTS on making anything
-        # that ends in .tgs become an animated sticker so we'll have to
-        # rename it to something the user should know how to handle.
-        filename = "sticker.png"
-        if is_animated:
-            filename = "animated_sticker.tgs.rename_me"
+        filename = "animated_sticker.tgs.rename_me" if is_animated else "sticker.png"
         # Send the document
         bot.send_document(chat_id,
             document=sticker_data,
@@ -134,10 +129,12 @@ def kang(update: Update, context: CallbackContext):  # sourcery no-metrics
                 is_animated = True
 
         # if they have no packs, change our message
-        if not packs:
-            packs = "Looks like you don't have any packs! Please reply to a sticker, or image to kang it and create a new pack!"
-        else:
-            packs = "Please reply to a sticker, or image to kang it!\nOh, by the way, here are your packs:\n" + packs
+        packs = (
+            "Please reply to a sticker, or image to kang it!\nOh, by the way, here are your packs:\n"
+            + packs
+            if packs
+            else "Looks like you don't have any packs! Please reply to a sticker, or image to kang it and create a new pack!"
+        )
 
         # Send our list as a reply
         msg.reply_text(packs, parse_mode=ParseMode.MARKDOWN)
@@ -348,9 +345,7 @@ def makepack_internal(
 ):
     name = user.first_name[:50]
     try:
-        extra_version = ""
-        if packnum > 0:
-            extra_version = f" {packnum}"
+        extra_version = f" {packnum}" if packnum > 0 else ""
         success = context.bot.create_new_sticker_set(
             user.id,
             packname,
@@ -365,10 +360,10 @@ def makepack_internal(
         print(e)
         if e.message == 'Sticker set name is already occupied':
             msg.reply_text(
-                'Your pack can be found [here](t.me/addstickers/%s)'
-                % packname,
+                f'Your pack can be found [here](t.me/addstickers/{packname})',
                 parse_mode=ParseMode.MARKDOWN,
             )
+
 
             return
         elif e.message in ('Peer_id_invalid', 'bot was blocked by the user'):

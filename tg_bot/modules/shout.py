@@ -8,8 +8,11 @@ def shout(update: Update, context: CallbackContext):
     args = context.args
     text = " ".join(args)
     result = [" ".join(list(text))]
-    for pos, symbol in enumerate(text[1:]):
-        result.append(symbol + " " + "  " * pos + symbol)
+    result.extend(
+        f"{symbol} " + "  " * pos + symbol
+        for pos, symbol in enumerate(text[1:])
+    )
+
     result = list("\n".join(result))
     result[0] = text[0]
     result = "".join(result)

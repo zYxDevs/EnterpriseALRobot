@@ -257,9 +257,6 @@ def user_not_admin(func):
         elif user and not is_user_admin(update, user.id):
             return func(update, context, *args, **kwargs)
 
-        elif not user:
-            pass
-
     return is_not_admin
 
 
@@ -386,8 +383,9 @@ def user_can_ban(func):
         member = update.effective_chat.get_member(user)
 
         if (
-                not (member.can_restrict_members or member.status == "creator")
-                and not user in SUDO_USERS
+            not member.can_restrict_members
+            and member.status != "creator"
+            and user not in SUDO_USERS
         ):
             update.effective_message.reply_text(
                 "Sorry son, but you're not worthy to wield the banhammer."
@@ -402,26 +400,22 @@ def user_can_ban(func):
 def connection_status(func):
     @wraps(func)
     def connected_status(update: Update, context: CallbackContext, *args, **kwargs):
-        conn = connected(
+        if conn := connected(
             context.bot,
             update,
             update.effective_chat,
             update.effective_user.id,
             need_admin=False,
-        )
-
-        if conn:
+        ):
             chat = dispatcher.bot.getChat(conn)
             update.__setattr__("_effective_chat", chat)
-            return func(update, context, *args, **kwargs)
-        else:
-            if update.effective_message.chat.type == "private":
-                update.effective_message.reply_text(
-                    "Send /connect in a group that you and I have in common first."
-                )
-                return connected_status
+        elif update.effective_message.chat.type == "private":
+            update.effective_message.reply_text(
+                "Send /connect in a group that you and I have in common first."
+            )
+            return connected_status
 
-            return func(update, context, *args, **kwargs)
+        return func(update, context, *args, **kwargs)
 
     return connected_status
 

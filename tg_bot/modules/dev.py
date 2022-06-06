@@ -19,8 +19,7 @@ from telethon import events
 @dev_plus
 def leave(update: Update, context: CallbackContext):
     bot = context.bot
-    args = context.args
-    if args:
+    if args := context.args:
         chat_id = str(args[0])
         leave_msg = " ".join(args[1:])
         try:
@@ -32,10 +31,19 @@ def leave(update: Update, context: CallbackContext):
     else:
         chat = update.effective_chat
         # user = update.effective_user
-        kb = [[
-            InlineKeyboardButton(text="I am sure of this action.", callback_data="leavechat_cb_({})".format(chat.id))
-        ]]
-        update.effective_message.reply_text("I'm going to leave {}, press the button below to confirm".format(chat.title), reply_markup=InlineKeyboardMarkup(kb))
+        kb = [
+            [
+                InlineKeyboardButton(
+                    text="I am sure of this action.",
+                    callback_data=f"leavechat_cb_({chat.id})",
+                )
+            ]
+        ]
+
+        update.effective_message.reply_text(
+            f"I'm going to leave {chat.title}, press the button below to confirm",
+            reply_markup=InlineKeyboardMarkup(kb),
+        )
 
 
 def leave_cb(update: Update, context: CallbackContext):
@@ -44,9 +52,9 @@ def leave_cb(update: Update, context: CallbackContext):
     if callback.from_user.id not in DEV_USERS:
         callback.answer(text="This isn't for you", show_alert=True)
         return
-    
+
     match = re.match(r"leavechat_cb_\((.+?)\)", callback.data)
-    chat = int(match.group(1))
+    chat = int(match[1])
     bot.leave_chat(chat_id=chat)
     callback.answer(text="Left chat")
 
@@ -133,15 +141,14 @@ def pip_install(update: Update, context: CallbackContext):
         message.reply_text("Enter a package name.")
         return
     if len(args) >= 1:
-        cmd = "py -m pip install {}".format(' '.join(args))
+        cmd = f"py -m pip install {' '.join(args)}"
         process = subprocess.Popen(
             cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True,
         )
         stdout, stderr = process.communicate()
         reply = ""
         stderr = stderr.decode()
-        stdout = stdout.decode()
-        if stdout:
+        if stdout := stdout.decode():
             reply += f"*Stdout*\n`{stdout}`\n"
         if stderr:
             reply += f"*Stderr*\n`{stderr}`\n"
@@ -149,7 +156,7 @@ def pip_install(update: Update, context: CallbackContext):
         message.reply_text(text=reply, parse_mode=ParseMode.MARKDOWN)
         
 
-@dev_plus      
+@dev_plus
 def get_chat_by_id(update: Update, context: CallbackContext):
     msg = update.effective_message
     args = context.args
@@ -158,23 +165,26 @@ def get_chat_by_id(update: Update, context: CallbackContext):
         return
     if len(args) >= 1:
         data = context.bot.get_chat(args[0])
-        m = "<b>Found chat, below are the details.</b>\n\n"
-        m += "<b>Title</b>: {}\n".format(html.escape(data.title))
+        m = (
+            "<b>Found chat, below are the details.</b>\n\n"
+            + "<b>Title</b>: {}\n".format(html.escape(data.title))
+        )
+
         m += "<b>Members</b>: {}\n\n".format(data.get_member_count())
         if data.description:
             m += "<i>{}</i>\n\n".format(html.escape(data.description))
         if data.linked_chat_id:
             m += "<b>Linked chat</b>: {}\n".format(data.linked_chat_id)
-        
+
         m += "<b>Type</b>: {}\n".format(data.type)
         if data.username:
             m += "<b>Username</b>: {}\n".format(html.escape(data.username))
         m += "<b>ID</b>: {}\n".format(data.id)
         m += "\n<b>Permissions</b>:\n <code>{}</code>\n".format(data.permissions)
-        
+
         if data.invite_link:
             m += "\n<b>Invitelink</b>: {}".format(data.invite_link)
-        
+
         msg.reply_text(text=m, parse_mode=ParseMode.HTML)
 
 
